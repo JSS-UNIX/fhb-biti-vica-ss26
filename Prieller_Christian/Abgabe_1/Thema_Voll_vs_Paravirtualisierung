@@ -78,6 +78,7 @@ Ist eine Virtualisierungstechnik, bei der das Gast-Betriebssystem so modifiziert
 | Kompatibilität     | Hoch                                                            | Eingeschränkt<br>(proprietäre Systeme wie Windows nur mit speziellen Treibern) |
 | Verbreitung heute  | Weit verbreitet                                                 | Weitgehend verdrängt                                                           |
 | Beispiele          | VMware, VirtualBox, KVM                                         | Xen                                                                            |
+
 ## Fazit
 
 Sowohl Vollvirtualisierung als auch Paravirtualisierung sind relevante Methoden der Hardware-Virtualisierung. Die Vollvirtualisierung bietet bessere Sicherheit, höhere Kompatibilität und ist heute dank hardwareunterstützter Prozessoren (Intel VT-x, AMD-V) die dominierende Methode. Die Paravirtualisierung hatte in frühen Virtualisierungsumgebungen einen Leistungsvorteil, wurde jedoch durch die Weiterentwicklung der Vollvirtualisierung weitgehend verdrängt. Die Wahl zwischen beiden Methoden hängt von den spezifischen Anforderungen der IT-Umgebung ab.
