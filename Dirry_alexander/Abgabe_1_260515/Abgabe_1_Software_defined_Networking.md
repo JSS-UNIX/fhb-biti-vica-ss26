@@ -32,6 +32,8 @@ SDN ist eng mit verwandten Konzepten verknüpft:
 
 Das SDN-Modell gliedert sich in drei klar getrennte Schichten:
 
+![SDN-Architektur mit Application, Control und Infrastructure Layer](../assets/SDN_Architecture.png)
+
 **Infrastructure Layer:**
 Die unterste Schicht besteht aus den physischen oder virtuellen Netzwerkgeräten. Diese Geräte enthalten sogenannte *Flow Tables*, in denen Weiterleitungsregeln (Flows) eingetragen sind. Trifft ein Paket ein, prüft das Gerät, ob es zu einem bekannten Flow passt, und handelt entsprechend – also zum Beispiel: weiterleiten, verwerfen oder markieren. Die Geräte treffen dabei *keine eigenständigen Entscheidungen* mehr; sie führen lediglich aus, was der Controller vorgibt.
 
