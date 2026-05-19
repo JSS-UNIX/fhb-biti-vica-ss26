@@ -9,7 +9,7 @@
 **Network Attached Storage (NAS)** ist, vereinfacht gesagt, ein Dateiserver, den man ans Heimnetz oder Firmennetzwerk hängt und dann von jedem Gerät darauf zugreifen kann. Im Unterschied zu einer USB-Platte, die direkt am Rechner hängt, hat ein NAS eine eigene CPU, eigenes RAM, ein eigenes Betriebssystem und mindestens einen Netzwerkanschluss – es ist also ein vollständig eigenständiges Gerät.
 
 Beispiel - NAS Architektur
-![NAS Architektur](image-2.png)
+![NAS Architektur](assets/NAS.png)
 
 Was ein NAS von einem „richtigen" Server unterscheidet, ist vor allem der Verwaltungsaufwand: Ein NAS läuft dauerhaft, ist über ein Web-Interface konfigurierbar und braucht in der Regel keinen Administrator, der Linux-Kommandos kennt. Wer will, kann es natürlich trotzdem so betreiben – gerade bei Open-Source-Lösungen wie TrueNAS ist die Grenze zu einem vollwertigen Server fließend.
 
@@ -116,7 +116,7 @@ Für Heimanwender und kleine Büros dominieren vier Hersteller den Markt:
 **Western Digital** (WD My Cloud, PR-Serie) und **Terramaster** sind für preissensible Käufer interessant, bleiben in Software-Tiefe und Ökosystem aber hinter den ersten beiden zurück.
 
 Beispiel – Synology DiskStation:
-![NAS DiskStation](image.png)
+![NAS DiskStation](assets/Synology.png)
 
 ### 5.2 Enterprise
 
@@ -127,7 +127,7 @@ Im Enterprise-Segment spielen andere Namen:
 - **HPE** StoreEasy und **IBM** FlashSystem runden das Angebot ab
 
 Beispiel – NetApp ONTAP:
-![NetApp ONTAP](image-1.png)
+![NetApp ONTAP](assets/Netapp.png)
 
 ### 5.3 Open Source und DIY
 
