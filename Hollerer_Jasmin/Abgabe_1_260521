@@ -21,7 +21,7 @@ Clients greifen nicht blockweise auf den Speicher zu (wie bei SAN), sondern auf 
 standardisierte **Netzwerkprotokolle** bereit, die vom Client gemountet werden können.
 
 **Aufbau** 
-![Darstellung Aufbau](../../assets/NAS_Grafik.png)
+![Darstellung Aufbau](../assets/NAS_Grafik.png)
 Ein NAS besteht typischerweise aus Prozessor (CPU), Arbeitsspeicher (RAM), einem oder mehreren Festplatteneinschüben,
 Netzwerkanschluss (Ethernet, oft 1–10 Gbit/s) und einem Betriebssystem (z. B. Synology DSM oder QNAP QTS).
 
