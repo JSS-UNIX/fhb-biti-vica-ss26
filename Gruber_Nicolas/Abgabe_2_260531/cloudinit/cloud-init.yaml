@@ -1,0 +1,643 @@
+#cloud-config
+# Cloud-Init Konfiguration fuer Gruber Nicolas - Abgabe 2
+# Richtet einen Nginx Webserver ein, der VM-Systeminformationen
+# als HTML-Dashboard und JSON-API bereitstellt
+# Hinweis: Bash-Variablen muessen mit $ escaped werden (Terraform templatefile)
+
+# System-Pakete aktualisieren
+package_update: true
+package_upgrade: true
+
+# Benoetigte Software installieren
+packages:
+  - nginx          # Webserver
+  - jq             # JSON Verarbeitung
+  - curl           # HTTP Anfragen
+  - lsb-release    # OS-Informationen
+  - certbot        # SSL Zertifikate
+  - python3-certbot-dns-cloudflare  # Cloudflare DNS Plugin
+
+write_files:
+  # ============================================================
+  # Konfigurationsdatei fuer Domain/SSL Setup
+  # Werte werden von Terraform beim Deployment eingesetzt
+  # ============================================================
+  - path: /opt/sysinfo/config.env
+    permissions: '0600'
+    content: |
+      DOMAIN="${domain_name}"
+      CF_TOKEN="${cloudflare_api_token}"
+      CF_ZONE="${cloudflare_zone_id}"
+      LE_MAIL="${letsencrypt_email}"
+
+  # ============================================================
+  # Hauptscript: Sammelt Systeminformationen und generiert
+  # sowohl die HTML-Seite als auch die JSON-API Antwort
+  # ============================================================
+  - path: /opt/sysinfo/generate.sh
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+      # Script zur Erfassung und Darstellung von VM-Systeminformationen
+      # Wird per Cron-Job jede Minute ausgefuehrt
+
+      # Ausgabe-Verzeichnisse
+      WEB_ROOT="/var/www/html"
+      API_ROOT="/var/www/html/api"
+      mkdir -p "$WEB_ROOT" "$API_ROOT"
+
+      # --- System-Basisdaten erfassen ---
+      HOSTNAME_VAL=$(hostname)
+      PRIVATE_IP=$(hostname -I | awk '{print $1}')
+      PUBLIC_IP=$(curl -s --connect-timeout 5 https://ifconfig.me 2>/dev/null || echo "nicht verfuegbar")
+      OS_INFO=$(lsb_release -ds 2>/dev/null || cat /etc/os-release | grep PRETTY_NAME | cut -d'"' -f2)
+      KERNEL_VERSION=$(uname -r)
+      KERNEL_ARCH=$(uname -m)
+      UPTIME_INFO=$(uptime -p 2>/dev/null || uptime)
+      BOOT_TIME=$(who -b 2>/dev/null | awk '{print $3, $4}')
+      TIMESTAMP=$(date '+%d.%m.%Y %H:%M:%S %Z')
+
+      # --- Hypervisor erkennen ---
+      HYPERVISOR="Nicht erkannt"
+      if [ -f /sys/hypervisor/type ]; then
+        HYPERVISOR=$(cat /sys/hypervisor/type)
+      elif command -v systemd-detect-virt &>/dev/null; then
+        VIRT=$(systemd-detect-virt 2>/dev/null)
+        if [ "$VIRT" != "none" ] && [ -n "$VIRT" ]; then
+          HYPERVISOR="$VIRT"
+        fi
+      elif grep -qi "kvm\|qemu" /sys/class/dmi/id/sys_vendor 2>/dev/null; then
+        HYPERVISOR="KVM/QEMU"
+      elif grep -qi "vmware" /sys/class/dmi/id/sys_vendor 2>/dev/null; then
+        HYPERVISOR="VMware"
+      elif grep -qi "xen" /sys/class/dmi/id/sys_vendor 2>/dev/null; then
+        HYPERVISOR="Xen"
+      fi
+
+      # --- CPU Informationen ---
+      CPU_MODEL=$(grep "model name" /proc/cpuinfo | head -1 | cut -d':' -f2 | xargs)
+      CPU_CORES=$(nproc)
+      LOAD_1=$(cat /proc/loadavg | awk '{print $1}')
+      LOAD_5=$(cat /proc/loadavg | awk '{print $2}')
+      LOAD_15=$(cat /proc/loadavg | awk '{print $3}')
+      PROCESS_COUNT=$(ps aux --no-heading 2>/dev/null | wc -l)
+
+      # --- Arbeitsspeicher ---
+      MEM_TOTAL=$(free -h | awk '/^Mem:/ {print $2}')
+      MEM_USED=$(free -h | awk '/^Mem:/ {print $3}')
+      MEM_FREE=$(free -h | awk '/^Mem:/ {print $4}')
+      MEM_AVAILABLE=$(free -h | awk '/^Mem:/ {print $7}')
+      SWAP_TOTAL=$(free -h | awk '/^Swap:/ {print $2}')
+      SWAP_USED=$(free -h | awk '/^Swap:/ {print $3}')
+
+      # --- Festplatten / Storage ---
+      DISK_TOTAL=$(df -h / | awk 'NR==2 {print $2}')
+      DISK_USED=$(df -h / | awk 'NR==2 {print $3}')
+      DISK_AVAIL=$(df -h / | awk 'NR==2 {print $4}')
+      DISK_USAGE=$(df -h / | awk 'NR==2 {print $5}')
+
+      # Block-Devices und Filesysteme auslesen
+      BLOCK_DEVICES=$(lsblk -o NAME,SIZE,TYPE,FSTYPE,MOUNTPOINT 2>/dev/null | head -25)
+      BLOCK_DEVICES_JSON=$(echo "$BLOCK_DEVICES" | jq -Rs .)
+
+      # --- Netzwerk Details ---
+      INTERFACES=$(ip -brief addr show 2>/dev/null | head -10)
+      INTERFACES_JSON=$(echo "$INTERFACES" | jq -Rs .)
+      DNS_SERVERS=$(grep "nameserver" /etc/resolv.conf 2>/dev/null | awk '{print $2}' | tr '\n' ', ' | sed 's/,$//')
+      DEFAULT_GW=$(ip route | grep default | awk '{print $3}' | head -1)
+
+      # --- Zusaetzliche Infos ---
+      RUNNING_SERVICES=$(systemctl list-units --type=service --state=running --no-pager 2>/dev/null | grep ".service" | wc -l)
+      USERS_LOGGED=$(who 2>/dev/null | wc -l)
+
+      # Domain aus Konfiguration laden
+      source /opt/sysinfo/config.env
+      if [ -n "$DOMAIN" ]; then
+        BASE_URL="https://$DOMAIN"
+      else
+        BASE_URL="http://$PUBLIC_IP"
+      fi
+
+      # ============================================================
+      # JSON API generieren
+      # ============================================================
+      cat > "$API_ROOT/info.json" << JSONEOF
+      {
+        "meta": {
+          "generated_at": "$TIMESTAMP",
+          "refresh_interval_sec": 60,
+          "endpoints": {
+            "html": "$BASE_URL/",
+            "json": "$BASE_URL/api/info.json"
+          }
+        },
+        "system": {
+          "hostname": "$HOSTNAME_VAL",
+          "os": "$OS_INFO",
+          "kernel_version": "$KERNEL_VERSION",
+          "architecture": "$KERNEL_ARCH",
+          "hypervisor": "$HYPERVISOR",
+          "uptime": "$UPTIME_INFO",
+          "boot_time": "$BOOT_TIME",
+          "running_services": $RUNNING_SERVICES,
+          "logged_in_users": $USERS_LOGGED
+        },
+        "cpu": {
+          "model": "$CPU_MODEL",
+          "cores": $CPU_CORES,
+          "load_average": {
+            "1min": "$LOAD_1",
+            "5min": "$LOAD_5",
+            "15min": "$LOAD_15"
+          },
+          "total_processes": $PROCESS_COUNT
+        },
+        "memory": {
+          "total": "$MEM_TOTAL",
+          "used": "$MEM_USED",
+          "free": "$MEM_FREE",
+          "available": "$MEM_AVAILABLE",
+          "swap_total": "$SWAP_TOTAL",
+          "swap_used": "$SWAP_USED"
+        },
+        "storage": {
+          "root_partition": {
+            "total": "$DISK_TOTAL",
+            "used": "$DISK_USED",
+            "available": "$DISK_AVAIL",
+            "usage_percent": "$DISK_USAGE"
+          },
+          "block_devices": $BLOCK_DEVICES_JSON
+        },
+        "network": {
+          "private_ip": "$PRIVATE_IP",
+          "public_ip": "$PUBLIC_IP",
+          "default_gateway": "$DEFAULT_GW",
+          "dns_servers": "$DNS_SERVERS",
+          "interfaces": $INTERFACES_JSON,
+          "domain": "$DOMAIN"
+        }
+      }
+      JSONEOF
+
+      # ============================================================
+      # HTML Dashboard generieren
+      # ============================================================
+      cat > "$WEB_ROOT/index.html" << 'HTMLEOF'
+      <!DOCTYPE html>
+      <html lang="de">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="refresh" content="30">
+        <title>VM System Dashboard - Gruber Nicolas</title>
+        <style>
+          :root {
+            --primary: #0d9488;
+            --primary-light: #14b8a6;
+            --bg-dark: #0f172a;
+            --bg-card: rgba(15, 23, 42, 0.8);
+            --border: rgba(13, 148, 136, 0.3);
+            --text: #e2e8f0;
+            --text-muted: #94a3b8;
+          }
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body {
+            font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+            background: var(--bg-dark);
+            background-image:
+              radial-gradient(ellipse at top left, rgba(13,148,136,0.1) 0%, transparent 50%),
+              radial-gradient(ellipse at bottom right, rgba(20,184,166,0.05) 0%, transparent 50%);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 2rem;
+          }
+          .wrapper { max-width: 1400px; margin: 0 auto; }
+          header {
+            text-align: center;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border);
+          }
+          header h1 {
+            font-size: 2rem;
+            color: var(--primary-light);
+            letter-spacing: -0.5px;
+          }
+          header .meta {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+          }
+          .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+          }
+          .panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            transition: border-color 0.2s;
+          }
+          .panel:hover { border-color: var(--primary-light); }
+          .panel h2 {
+            color: var(--primary-light);
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border);
+          }
+          .panel table { width: 100%; border-collapse: collapse; }
+          .panel td {
+            padding: 0.4rem 0;
+            font-size: 0.85rem;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+          }
+          .panel td:first-child { color: var(--text-muted); width: 42%; }
+          .panel td:last-child { color: #fff; }
+          .full-width { grid-column: 1 / -1; }
+          pre {
+            background: rgba(0,0,0,0.3);
+            padding: 1rem;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+          }
+          .actions {
+            text-align: center;
+            margin: 2rem 0;
+          }
+          .actions a {
+            display: inline-block;
+            color: var(--primary-light);
+            text-decoration: none;
+            border: 1px solid var(--primary);
+            padding: 0.75rem 2rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            margin: 0 0.5rem;
+          }
+          .actions a:hover {
+            background: var(--primary);
+            color: #fff;
+          }
+          footer {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            padding: 1.5rem 0;
+            border-top: 1px solid var(--border);
+          }
+        </style>
+      </head>
+      <body>
+        <div class="wrapper">
+          <header>
+            <h1>VM System Dashboard</h1>
+            <div class="meta">Aktualisiert: <span id="ts">-</span> | Host: <span id="hn">-</span></div>
+          </header>
+
+          <div class="dashboard">
+            <div class="panel">
+              <h2>System</h2>
+              <table>
+                <tr><td>Hostname</td><td id="d-hostname"></td></tr>
+                <tr><td>Betriebssystem</td><td id="d-os"></td></tr>
+                <tr><td>Kernel</td><td id="d-kernel"></td></tr>
+                <tr><td>Architektur</td><td id="d-arch"></td></tr>
+                <tr><td>Hypervisor</td><td id="d-hypervisor"></td></tr>
+                <tr><td>Uptime</td><td id="d-uptime"></td></tr>
+                <tr><td>Boot-Zeitpunkt</td><td id="d-boot"></td></tr>
+                <tr><td>Laufende Services</td><td id="d-services"></td></tr>
+              </table>
+            </div>
+
+            <div class="panel">
+              <h2>Prozessor</h2>
+              <table>
+                <tr><td>Modell</td><td id="d-cpu-model"></td></tr>
+                <tr><td>Kerne</td><td id="d-cpu-cores"></td></tr>
+                <tr><td>Load (1/5/15 min)</td><td id="d-load"></td></tr>
+                <tr><td>Prozesse</td><td id="d-procs"></td></tr>
+              </table>
+            </div>
+
+            <div class="panel">
+              <h2>Arbeitsspeicher</h2>
+              <table>
+                <tr><td>Gesamt</td><td id="d-mem-total"></td></tr>
+                <tr><td>Belegt</td><td id="d-mem-used"></td></tr>
+                <tr><td>Frei</td><td id="d-mem-free"></td></tr>
+                <tr><td>Verfuegbar</td><td id="d-mem-avail"></td></tr>
+                <tr><td>Swap Gesamt</td><td id="d-swap-total"></td></tr>
+                <tr><td>Swap Belegt</td><td id="d-swap-used"></td></tr>
+              </table>
+            </div>
+
+            <div class="panel">
+              <h2>Festplatte</h2>
+              <table>
+                <tr><td>Gesamt</td><td id="d-disk-total"></td></tr>
+                <tr><td>Belegt</td><td id="d-disk-used"></td></tr>
+                <tr><td>Verfuegbar</td><td id="d-disk-avail"></td></tr>
+                <tr><td>Auslastung</td><td id="d-disk-pct"></td></tr>
+              </table>
+            </div>
+
+            <div class="panel">
+              <h2>Netzwerk</h2>
+              <table>
+                <tr><td>Private IP</td><td id="d-net-priv"></td></tr>
+                <tr><td>Public IP</td><td id="d-net-pub"></td></tr>
+                <tr><td>Gateway</td><td id="d-net-gw"></td></tr>
+                <tr><td>DNS Server</td><td id="d-net-dns"></td></tr>
+                <tr><td>Domain</td><td id="d-net-domain"></td></tr>
+              </table>
+            </div>
+
+            <div class="panel full-width">
+              <h2>Block-Devices & Filesysteme</h2>
+              <pre id="d-blockdev">Lade Daten...</pre>
+            </div>
+
+            <div class="panel full-width">
+              <h2>Netzwerk-Interfaces</h2>
+              <pre id="d-ifaces">Lade Daten...</pre>
+            </div>
+          </div>
+
+          <div class="actions">
+            <a href="/api/info.json">JSON API Endpoint</a>
+          </div>
+
+          <footer>
+            Gruber Nicolas - FH Burgenland BITI | Virtualisierung SS26 | Auto-Refresh alle 30s
+          </footer>
+        </div>
+
+        <script>
+          // Daten vom JSON API Endpoint laden und im Dashboard anzeigen
+          fetch('/api/info.json')
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+              document.getElementById('ts').textContent = d.meta.generated_at;
+              document.getElementById('hn').textContent = d.system.hostname;
+              document.getElementById('d-hostname').textContent = d.system.hostname;
+              document.getElementById('d-os').textContent = d.system.os;
+              document.getElementById('d-kernel').textContent = d.system.kernel_version;
+              document.getElementById('d-arch').textContent = d.system.architecture;
+              document.getElementById('d-hypervisor').textContent = d.system.hypervisor;
+              document.getElementById('d-uptime').textContent = d.system.uptime;
+              document.getElementById('d-boot').textContent = d.system.boot_time;
+              document.getElementById('d-services').textContent = d.system.running_services;
+              document.getElementById('d-cpu-model').textContent = d.cpu.model;
+              document.getElementById('d-cpu-cores').textContent = d.cpu.cores;
+              document.getElementById('d-load').textContent =
+                d.cpu.load_average['1min'] + ' / ' +
+                d.cpu.load_average['5min'] + ' / ' +
+                d.cpu.load_average['15min'];
+              document.getElementById('d-procs').textContent = d.cpu.total_processes;
+              document.getElementById('d-mem-total').textContent = d.memory.total;
+              document.getElementById('d-mem-used').textContent = d.memory.used;
+              document.getElementById('d-mem-free').textContent = d.memory.free;
+              document.getElementById('d-mem-avail').textContent = d.memory.available;
+              document.getElementById('d-swap-total').textContent = d.memory.swap_total;
+              document.getElementById('d-swap-used').textContent = d.memory.swap_used;
+              document.getElementById('d-disk-total').textContent = d.storage.root_partition.total;
+              document.getElementById('d-disk-used').textContent = d.storage.root_partition.used;
+              document.getElementById('d-disk-avail').textContent = d.storage.root_partition.available;
+              document.getElementById('d-disk-pct').textContent = d.storage.root_partition.usage_percent;
+              document.getElementById('d-net-priv').textContent = d.network.private_ip;
+              document.getElementById('d-net-pub').textContent = d.network.public_ip;
+              document.getElementById('d-net-gw').textContent = d.network.default_gateway;
+              document.getElementById('d-net-dns').textContent = d.network.dns_servers;
+              document.getElementById('d-net-domain').textContent = d.network.domain || '(keine)';
+              document.getElementById('d-blockdev').textContent = d.storage.block_devices;
+              document.getElementById('d-ifaces').textContent = d.network.interfaces;
+            })
+            .catch(function(err) {
+              console.error('Fehler beim Laden der Daten:', err);
+            });
+        </script>
+      </body>
+      </html>
+      HTMLEOF
+
+  # ============================================================
+  # Nginx Konfiguration - HTTP Webserver
+  # Stellt HTML Dashboard und JSON API bereit
+  # ============================================================
+  - path: /etc/nginx/sites-available/sysinfo
+    permissions: '0644'
+    content: |
+      server {
+          listen 80 default_server;
+          listen [::]:80 default_server;
+          server_name _;
+
+          # HTML Dashboard
+          root /var/www/html;
+          index index.html;
+
+          location / {
+              try_files \$uri \$uri/ =404;
+          }
+
+          # JSON API mit CORS-Header fuer externe Zugriffe
+          location /api/ {
+              alias /var/www/html/api/;
+              default_type application/json;
+              add_header Access-Control-Allow-Origin *;
+              add_header Cache-Control "no-cache, no-store";
+          }
+      }
+
+  # ============================================================
+  # DNS und SSL Setup Script
+  # Erstellt Cloudflare DNS Eintrag und holt Let's Encrypt Zertifikat
+  # ============================================================
+  - path: /opt/sysinfo/setup-ssl.sh
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+      # Automatisches DNS + SSL Setup via Cloudflare und Let's Encrypt
+      set -e
+
+      # Konfiguration laden
+      source /opt/sysinfo/config.env
+
+      # Pruefen ob alle noetiogen Variablen gesetzt sind
+      if [ -z "$DOMAIN" ] || [ -z "$CF_TOKEN" ] || [ -z "$CF_ZONE" ]; then
+        echo "[INFO] Keine Domain/Cloudflare Konfiguration vorhanden - SSL wird uebersprungen"
+        exit 0
+      fi
+
+      echo "=== SSL Setup fuer $DOMAIN ==="
+
+      # Oeffentliche IP mit Retry-Logik ermitteln
+      PUBLIC_IP=""
+      for ATTEMPT in $(seq 1 5); do
+        PUBLIC_IP=$(curl -s --connect-timeout 10 https://ifconfig.me 2>/dev/null)
+        if [ -n "$PUBLIC_IP" ]; then
+          break
+        fi
+        echo "[WARN] Versuch $ATTEMPT: Konnte IP nicht ermitteln, warte 15s..."
+        sleep 15
+      done
+
+      if [ -z "$PUBLIC_IP" ]; then
+        echo "[ERROR] Oeffentliche IP konnte nicht ermittelt werden"
+        exit 1
+      fi
+      echo "[INFO] Oeffentliche IP: $PUBLIC_IP"
+
+      # DNS A-Record in Cloudflare erstellen oder aktualisieren
+      echo "[INFO] Pruefe bestehende DNS Eintraege..."
+      EXISTING_RECORDS=$(curl -s -X GET \
+        "https://api.cloudflare.com/client/v4/zones/$CF_ZONE/dns_records?name=$DOMAIN&type=A" \
+        -H "Authorization: Bearer $CF_TOKEN" \
+        -H "Content-Type: application/json")
+
+      RECORD_COUNT=$(echo "$EXISTING_RECORDS" | jq -r '.result | length')
+
+      if [ "$RECORD_COUNT" -gt 0 ]; then
+        # Bestehenden Record aktualisieren
+        RECORD_ID=$(echo "$EXISTING_RECORDS" | jq -r '.result[0].id')
+        echo "[INFO] Aktualisiere bestehenden DNS Record..."
+        curl -s -X PATCH \
+          "https://api.cloudflare.com/client/v4/zones/$CF_ZONE/dns_records/$RECORD_ID" \
+          -H "Authorization: Bearer $CF_TOKEN" \
+          -H "Content-Type: application/json" \
+          --data "{\"type\":\"A\",\"name\":\"$DOMAIN\",\"content\":\"$PUBLIC_IP\",\"ttl\":300,\"proxied\":false}" \
+          | jq -r '.success'
+      else
+        # Neuen Record erstellen
+        echo "[INFO] Erstelle neuen DNS A-Record: $DOMAIN -> $PUBLIC_IP"
+        curl -s -X POST \
+          "https://api.cloudflare.com/client/v4/zones/$CF_ZONE/dns_records" \
+          -H "Authorization: Bearer $CF_TOKEN" \
+          -H "Content-Type: application/json" \
+          --data "{\"type\":\"A\",\"name\":\"$DOMAIN\",\"content\":\"$PUBLIC_IP\",\"ttl\":300,\"proxied\":false}" \
+          | jq -r '.success'
+      fi
+
+      # Warten bis DNS propagiert ist
+      echo "[INFO] Warte 90 Sekunden auf DNS Propagation..."
+      sleep 90
+
+      # Cloudflare Credentials fuer certbot bereitstellen
+      mkdir -p /etc/letsencrypt
+      cat > /etc/letsencrypt/cf-credentials.ini << CFEOF
+      dns_cloudflare_api_token = $CF_TOKEN
+      CFEOF
+      chmod 600 /etc/letsencrypt/cf-credentials.ini
+
+      # E-Mail Parameter bestimmen
+      if [ -n "$LE_MAIL" ]; then
+        MAIL_PARAM="--email $LE_MAIL"
+      else
+        MAIL_PARAM="--register-unsafely-without-email"
+      fi
+
+      # SSL Zertifikat anfordern (DNS-01 Challenge via Cloudflare)
+      echo "[INFO] Fordere SSL Zertifikat an..."
+      certbot certonly \
+        --dns-cloudflare \
+        --dns-cloudflare-credentials /etc/letsencrypt/cf-credentials.ini \
+        --dns-cloudflare-propagation-seconds 30 \
+        -d "$DOMAIN" \
+        $MAIL_PARAM \
+        --non-interactive \
+        --agree-tos \
+        --no-eff-email
+
+      if [ $? -ne 0 ]; then
+        echo "[ERROR] SSL Zertifikat konnte nicht erstellt werden"
+        exit 1
+      fi
+
+      echo "[OK] SSL Zertifikat erfolgreich erstellt"
+
+      # Nginx auf HTTPS umkonfigurieren
+      cat > /etc/nginx/sites-available/sysinfo << NGINXEOF
+      # HTTP zu HTTPS Weiterleitung
+      server {
+          listen 80 default_server;
+          listen [::]:80 default_server;
+          server_name $DOMAIN;
+          return 301 https://\$host\$request_uri;
+      }
+
+      # HTTPS Konfiguration mit SSL
+      server {
+          listen 443 ssl http2 default_server;
+          listen [::]:443 ssl http2 default_server;
+          server_name $DOMAIN;
+
+          # Let's Encrypt Zertifikate
+          ssl_certificate /etc/letsencrypt/live/$DOMAIN/fullchain.pem;
+          ssl_certificate_key /etc/letsencrypt/live/$DOMAIN/privkey.pem;
+
+          # Sichere SSL Einstellungen
+          ssl_protocols TLSv1.2 TLSv1.3;
+          ssl_ciphers HIGH:!aNULL:!MD5;
+          ssl_prefer_server_ciphers on;
+
+          root /var/www/html;
+          index index.html;
+
+          location / {
+              try_files \$uri \$uri/ =404;
+          }
+
+          location /api/ {
+              alias /var/www/html/api/;
+              default_type application/json;
+              add_header Access-Control-Allow-Origin *;
+              add_header Cache-Control "no-cache, no-store";
+          }
+      }
+      NGINXEOF
+
+      # Nginx neu laden mit neuer Konfiguration
+      nginx -t && systemctl reload nginx
+
+      # Auto-Renewal Hook einrichten
+      mkdir -p /etc/letsencrypt/renewal-hooks/deploy
+      cat > /etc/letsencrypt/renewal-hooks/deploy/nginx-reload.sh << 'HOOKEOF'
+      #!/bin/bash
+      # Nginx nach Zertifikatserneuerung neu laden
+      systemctl reload nginx
+      HOOKEOF
+      chmod +x /etc/letsencrypt/renewal-hooks/deploy/nginx-reload.sh
+
+      echo "=== SSL Setup abgeschlossen ==="
+      echo "[OK] Website: https://$DOMAIN"
+      echo "[OK] API:     https://$DOMAIN/api/info.json"
+
+# ============================================================
+# Befehle die beim ersten Boot ausgefuehrt werden
+# ============================================================
+runcmd:
+  # Standard Nginx Seite deaktivieren
+  - rm -f /etc/nginx/sites-enabled/default
+  # Eigene Konfiguration aktivieren
+  - ln -sf /etc/nginx/sites-available/sysinfo /etc/nginx/sites-enabled/sysinfo
+  # Erstmalig Systeminformationen generieren
+  - /opt/sysinfo/generate.sh
+  # Nginx starten und aktivieren
+  - systemctl restart nginx
+  - systemctl enable nginx
+  # Cron-Job: Informationen jede Minute aktualisieren
+  - echo "* * * * * root /opt/sysinfo/generate.sh" > /etc/cron.d/sysinfo-update
+  - chmod 644 /etc/cron.d/sysinfo-update
+  # DNS/SSL Setup im Hintergrund ausfuehren (blockiert Boot nicht)
+  - nohup /opt/sysinfo/setup-ssl.sh > /var/log/ssl-setup.log 2>&1 &
