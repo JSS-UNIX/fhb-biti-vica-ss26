@@ -1,3 +1,4 @@
+# benötigter Provider  auswählen hier: Exoscale
 terraform {
   required_providers {
     exoscale = {
@@ -6,7 +7,9 @@ terraform {
   }
 }
 
-
+## Authentifizierung: 
+# - key und secret Werte au *.tfvars einlesen 
+# - werden in terrafrom ausgaben geschützt behandet da "sensitive=true"
 variable "exoscale_api_key" {
   description = "Exoscale API key used for authentication"
   type        = string
@@ -18,16 +21,21 @@ variable "exoscale_api_secret" {
   type        = string
   sensitive   = true
 }
-
+# - Anmeldung bei exoscale
 provider "exoscale" {
   key    = var.exoscale_api_key
   secret = var.exoscale_api_secret
 }
-
+## Ab hier Konfiguration in Exoscale - BEGINN
+#  Zone und OS auswählen für template abfragen
 data "exoscale_template" "my_template" {
   zone = "at-vie-1"
   name = "Linux Ubuntu 26.04 LTS 64-bit"
 }
+# VM erstellen, 
+# - Regeln der security Group dieser VM zugeordnet.
+# - beim Start wird cloud-Init Konfig durchgeführt.
+# -- Vorlage  cloudinit.yaml.tftpl;  details in app.py für Webanwendung 
 resource "exoscale_compute_instance" "my_instance" {
   zone        = "at-vie-1"
   name        = "vm-ar-ubuntu"
@@ -42,11 +50,13 @@ resource "exoscale_compute_instance" "my_instance" {
   })
 
 }
-
+#  DNS Konfiguration
+# - domain  wird abgefragt 
 data "exoscale_domain" "my_domain" {
   name = "biti-fhb.org"
 }
-
+# - DNS-A Record erstellt
+# -- dns name ist gleich mit dem Hostnamen
 resource "exoscale_domain_record" "my_host" {
   domain      = data.exoscale_domain.my_domain.id
   name        = exoscale_compute_instance.my_instance.name
@@ -54,12 +64,13 @@ resource "exoscale_domain_record" "my_host" {
   content     = exoscale_compute_instance.my_instance.public_ip_address
 }
 
+#  Security Group erstellen 
 resource "exoscale_security_group" "http" {
   name = "arsec-sg-http"
 }
 
 
-# HTTP (port 80)
+# - HTTP (port 80)
 
 resource "exoscale_security_group_rule" "http" {
   security_group_id = exoscale_security_group.http.id
@@ -69,4 +80,5 @@ resource "exoscale_security_group_rule" "http" {
   end_port          = 80
   cidr              = "0.0.0.0/0"
 }
-  
+
+## Ab hier Konfiguration in Exoscale - ENDE
