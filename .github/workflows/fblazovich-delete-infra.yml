@@ -22,11 +22,11 @@ jobs:
       - name: Setup OpenTofu
         uses: opentofu/setup-opentofu@v1
 
-      - name: Restore OpenTofu state cache
-        uses: actions/cache/restore@v4
+      - name: Download OpenTofu state
+        uses: actions/download-artifact@v4
         with:
-          path: ./Blazovich_Fabian/Abgabe_2_260603/terraform.tfstate
-          key: opentofu-state
+          name: terraform-state
+          path: ./Blazovich_Fabian
 
       - name: Initialize OpenTofu
         run: tofu init

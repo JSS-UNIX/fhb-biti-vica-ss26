@@ -36,8 +36,8 @@ jobs:
 
  # Speichert den  OpenTofu-State als GitHub Cache.
       # Dieser State wird später vom Destroy-Workflow benötigt.
-      - name: Save OpenTofu state cache
-        uses: actions/cache/save@v4
+      - name: Upload OpenTofu state
+        uses: actions/upload-artifacte@v4
         with:
+          name: terraform-state
           path: ./Blazovich_Fabian/Abgabe_2_260603/terraform.tfstate
-          key: opentofu-state
