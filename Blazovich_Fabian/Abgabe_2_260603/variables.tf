@@ -40,8 +40,3 @@ variable "exoscale_secret" {
     sensitive = true
 }
 
-variable "ssh_public_key" {
-    description = "Public SSH key used for VM access"
-    type = string
-    sensitive = true
-}

@@ -1,0 +1,58 @@
+#cloud-config
+
+package_update: true
+package_upgrade: true
+
+packages:
+  - nginx
+
+write_files:
+  - path: /var/www/meine-website/html/index.html
+    permissions: "0644"
+    content: |
+      <!DOCTYPE html>
+      <html>
+      <body>
+        <h1>Exoscale VM Info</h1>
+        <p>Diese Website wurde automatisch mit CloudInit erstellt.</p>
+        <p>JSON-Endpunkt: <a href="/api">/api</a></p>
+      </body>
+      </html>
+
+  - path: /var/www/meine-website/html/api.json
+    permissions: "0644"
+    content: |
+      {
+        "status": "ok",
+        "message": "CloudInit hat nginx automatisch konfiguriert"
+      }
+
+  - path: /etc/nginx/sites-available/meine-website
+    permissions: "0644"
+    content: |
+      server {
+          listen 80;
+          listen [::]:80;
+
+          server_name _;
+
+          root /var/www/meine-website/html;
+          index index.html;
+
+          location / {
+              try_files $uri $uri/ =404;
+          }
+
+          location = /api {
+              default_type application/json;
+              alias /var/www/meine-website/html/api.json;
+          }
+      }
+
+runcmd:
+  - mkdir -p /var/www/meine-website/html
+  - ln -sf /etc/nginx/sites-available/meine-website /etc/nginx/sites-enabled/meine-website
+  - rm -f /etc/nginx/sites-enabled/default
+  - nginx -t
+  - systemctl enable nginx
+  - systemctl restart nginx
