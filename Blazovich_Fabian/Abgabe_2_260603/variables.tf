@@ -11,7 +11,7 @@ variable "vm_name" {
 }
 
 variable "disk_size" {
-    descritpion = "Disk Größe in GB"
+    description = "Disk Größe in GB"
     type = number
     default = 15
 }
@@ -24,6 +24,18 @@ variable "instance_type" {
 
 variable "ubuntu_template" {
     description = "Ubuntu-Image, welches für die VM verwendet wird"
-    type = "string"
+    type = string
     default = "Ubuntu 22.04.5 LTS 64-bit"
+}
+
+variable "exoscale_key" {
+    description = "Exoscale Key"
+    type = string
+    sensitive = true
+}
+
+variable "exoscale_secret" {
+    description = "Exoscale Secret"
+    type = string
+    sensitive = true
 }
