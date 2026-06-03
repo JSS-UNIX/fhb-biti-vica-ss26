@@ -7,29 +7,6 @@ packages:
   - nginx
 
 write_files:
-  - path: /var/www/meine-website/html/index.html
-    permissions: "0644"
-    content: |
-      <!DOCTYPE html>
-      <html>
-      <head>
-      <title>VM-Blazovich_Fabian</title>
-      </head>
-      <body>
-        <h1>Exoscale VM Info</h1>
-        <p>Diese Website wurde automatisch mit CloudInit erstellt.</p>
-        <p>JSON-Endpunkt: <a href="/api">/api</a></p>
-      </body>
-      </html>
-
-  - path: /var/www/meine-website/html/api.json
-    permissions: "0644"
-    content: |
-      {
-        "status": "ok",
-        "message": "CloudInit hat nginx automatisch konfiguriert"
-      }
-
   - path: /etc/nginx/sites-available/meine-website
     permissions: "0644"
     content: |
@@ -54,6 +31,57 @@ write_files:
 
 runcmd:
   - mkdir -p /var/www/meine-website/html
+
+  - |
+    HOSTNAME=$(hostname)
+    IP=$(hostname -I | awk '{print $1}')
+    OS=$(grep PRETTY_NAME /etc/os-release | cut -d= -f2 | tr -d '"')
+    KERNEL=$(uname -r)
+    RAM=$(free -h | awk '/Mem:/ {print $2}')
+    CPU=$(lscpu | grep "Model name" | sed 's/Model name:[ \t]*//')
+    DISK=$(df -h / | awk 'NR==2 {print $2}')
+    HYPERVISOR=$(systemd-detect-virt || echo "unknown")
+
+    cat > /var/www/meine-website/html/index.html <<EOF
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>VM-Blazovich_Fabian</title>
+    </head>
+    <body>
+      <h1>Exoscale VM Info</h1>
+
+      <h2>Technische Informationen</h2>
+
+      <ul>
+        <li><strong>Hostname:</strong> $HOSTNAME</li>
+        <li><strong>IP-Adresse:</strong> $IP</li>
+        <li><strong>Betriebssystem:</strong> $OS</li>
+        <li><strong>Kernel:</strong> $KERNEL</li>
+        <li><strong>RAM:</strong> $RAM</li>
+        <li><strong>CPU:</strong> $CPU</li>
+        <li><strong>Root-Disk:</strong> $DISK</li>
+        <li><strong>Hypervisor:</strong> $HYPERVISOR</li>
+      </ul>
+
+      <p>JSON-Endpunkt: <a href="/api">/api</a></p>
+    </body>
+    </html>
+    EOF
+
+    cat > /var/www/meine-website/html/api.json <<EOF
+    {
+      "hostname": "$HOSTNAME",
+      "ip": "$IP",
+      "os": "$OS",
+      "kernel": "$KERNEL",
+      "ram": "$RAM",
+      "cpu": "$CPU",
+      "disk": "$DISK",
+      "hypervisor": "$HYPERVISOR"
+    }
+    EOF
+
   - ln -sf /etc/nginx/sites-available/meine-website /etc/nginx/sites-enabled/meine-website
   - rm -f /etc/nginx/sites-enabled/default
   - nginx -t
