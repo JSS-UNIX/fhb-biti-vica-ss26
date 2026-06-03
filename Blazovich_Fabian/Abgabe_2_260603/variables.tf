@@ -1,7 +1,7 @@
 variable "zone" {
     description = "Exoscale Zone"
     type = string
-    default = "at-vie-2"
+    default = "at-vie-1"
 }
 
 variable "vm_name" {
@@ -23,9 +23,9 @@ variable "instance_type" {
 }
 
 variable "ubuntu_template" {
-    description = "Ubuntu-Image, welches für die VM verwendet wird"
-    type = string
-    default = "Ubuntu 24.04 LTS 64-bit"
+  description = "Ubuntu Image, das für die VM verwendet wird"
+  type        = string
+  default     = "Linux Ubuntu 24.04 LTS 64-bit"
 }
 
 variable "exoscale_key" {
