@@ -25,6 +25,5 @@ resource "exoscale_compute_instance" "vm" {
   type        = var.instance_type
   disk_size   = var.disk_size
   security_group_ids = [exoscale_security_group.my_security_group.id]
-  ssh_keys           = [exoscale_ssh_key.ssh.id]
   user_data = file("${path.module}/cloud-init.yaml")
 }
