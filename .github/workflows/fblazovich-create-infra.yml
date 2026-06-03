@@ -9,7 +9,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: Abgabe_2_Fabian
+        working-directory: ./Blazovich_Fabian/Abgabe_2_260603
 
     env:
       TF_VAR_exoscale_key: ${{ secrets.EXOSCALE_API_KEY }}
