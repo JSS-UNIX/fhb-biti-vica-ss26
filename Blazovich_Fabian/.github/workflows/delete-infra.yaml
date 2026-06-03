@@ -1,0 +1,35 @@
+name: Create Exoscale Infrastructure
+
+on:
+  workflow_dispatch:
+
+jobs:
+  create:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: Abgabe_2_Fabian
+
+    env:
+      TF_VAR_exoscale_key: ${{ secrets.EXOSCALE_API_KEY }}
+      TF_VAR_exoscale_secret: ${{ secrets.EXOSCALE_API_SECRET }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v1
+
+      - name: Initilize OpenTofu
+        run: tofu init
+
+      - name: Validate OpenTofu configuration
+        run: tofu validate 
+
+      - name: Plan OpenTofu
+        run: tofu plan
+        
+      - name: OpenTofu Apply
+        run: tofu apply -auto-approve
