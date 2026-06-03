@@ -22,6 +22,12 @@ jobs:
       - name: Setup OpenTofu
         uses: opentofu/setup-opentofu@v1
 
+      - name: Restore OpenTofu state cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ./Blazovich_Fabian/Abgabe_2_260603/terraform.tfstate
+          key: opentofu-state
+
       - name: Initialize OpenTofu
         run: tofu init
 

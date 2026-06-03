@@ -33,3 +33,11 @@ jobs:
         
       - name: OpenTofu Apply
         run: tofu apply -auto-approve
+
+ # Speichert den  OpenTofu-State als GitHub Cache.
+      # Dieser State wird später vom Destroy-Workflow benötigt.
+      - name: Save OpenTofu state cache
+        uses: actions/cache/save@v4
+        with:
+          path: ./Blazovich_Fabian/Abgabe_2_260603/terraform.tfstate
+          key: opentofu-state
