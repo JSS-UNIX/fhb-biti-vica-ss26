@@ -1,4 +1,4 @@
-name: Create Exoscale Infrastructure
+name: Delete Exoscale Infrastructure
 
 on:
   workflow_dispatch:
