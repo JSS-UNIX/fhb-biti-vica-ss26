@@ -1,9 +1,9 @@
-resource "exoscale_security_group" "my_security_group" {
-  name = "my-security-group"
+resource "exoscale_security_group" "fblazovich_sec_group" {
+  name = "fblazovich_sec_group"
 }
 
 resource "exoscale_security_group_rule" "ssh" {
-  security_group_id = exoscale_security_group.my_security_group.id
+  security_group_id = exoscale_security_group.fblazovich_sec_group.id
   type              = "INGRESS"
   protocol          = "TCP"
   cidr              = "0.0.0.0/0"
@@ -12,7 +12,7 @@ resource "exoscale_security_group_rule" "ssh" {
 }
 
 resource "exoscale_security_group_rule" "http" {
-  security_group_id = exoscale_security_group.my_security_group.id
+  security_group_id = exoscale_security_group.fblazovich_sec_group.id
   type              = "INGRESS"
   protocol          = "TCP"
   cidr              = "0.0.0.0/0"
@@ -21,7 +21,7 @@ resource "exoscale_security_group_rule" "http" {
 }
 
 resource "exoscale_security_group_rule" "https" {
-  security_group_id = exoscale_security_group.my_security_group.id
+  security_group_id = exoscale_security_group.fblazovich_sec_group.id
   type              = "INGRESS"
   protocol          = "TCP"
   cidr              = "0.0.0.0/0"

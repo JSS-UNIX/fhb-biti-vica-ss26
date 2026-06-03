@@ -10,6 +10,6 @@ resource "exoscale_compute_instance" "vm" {
   template_id = data.exoscale_template.ubuntu.id
   type        = var.instance_type
   disk_size   = var.disk_size
-  security_group_ids = [exoscale_security_group.my_security_group.id]
+  security_group_ids = [exoscale_security_group.fblazovich_sec_group.id]
   user_data = file("${path.module}/cloud-init.yml")
 }
