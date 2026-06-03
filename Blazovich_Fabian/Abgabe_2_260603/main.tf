@@ -1,17 +1,3 @@
-terraform {
-  required_providers {
-    exoscale = {
-      source  = "exoscale/exoscale"
-      version = "~> 0.68.0"
-    }
-  }
-}
-
-provider "exoscale" {
-  key = var.exoscale_key
-  secret = var.exoscale_secret
-}
-
 data "exoscale_template" "ubuntu" {
   zone = var.zone
   name = var.ubuntu_template
