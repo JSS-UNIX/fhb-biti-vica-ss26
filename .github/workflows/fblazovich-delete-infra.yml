@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  create:
+  destroy:
     runs-on: ubuntu-latest
 
     defaults:
@@ -22,14 +22,11 @@ jobs:
       - name: Setup OpenTofu
         uses: opentofu/setup-opentofu@v1
 
-      - name: Initilize OpenTofu
+      - name: Initialize OpenTofu
         run: tofu init
 
       - name: Validate OpenTofu configuration
-        run: tofu validate 
+        run: tofu validate
 
-      - name: Plan OpenTofu
-        run: tofu plan
-        
-      - name: OpenTofu Apply
-        run: tofu apply -auto-approve
+      - name: Destroy OpenTofu infrastructure
+        run: tofu destroy -auto-approve

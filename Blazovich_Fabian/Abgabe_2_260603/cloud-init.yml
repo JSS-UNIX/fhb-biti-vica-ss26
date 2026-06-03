@@ -12,6 +12,9 @@ write_files:
     content: |
       <!DOCTYPE html>
       <html>
+      <head>
+      <title>VM-Blazovich_Fabian</title>
+      </head>
       <body>
         <h1>Exoscale VM Info</h1>
         <p>Diese Website wurde automatisch mit CloudInit erstellt.</p>
