@@ -24,4 +24,5 @@ resource "exoscale_compute_instance" "vm" {
   template_id = data.exoscale_template.ubuntu.id
   type        = var.instance_type
   disk_size   = var.disk_size
+  security_group_ids = [exoscale_security_group.my_security_group.id]
 }
