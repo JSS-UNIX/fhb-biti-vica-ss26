@@ -14,8 +14,6 @@ jobs:
     env:
       TF_VAR_exoscale_key: ${{ secrets.EXOSCALE_API_KEY }}
       TF_VAR_exoscale_secret: ${{ secrets.EXOSCALE_API_SECRET }}
-      AWS_ACCESS_KEY_ID: ${{ secrets.EXOSCALE_API_KEY }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.EXOSCALE_API_SECRET }}
 
     steps:
       - name: Checkout Repository
@@ -25,7 +23,7 @@ jobs:
         uses: opentofu/setup-opentofu@v1
 
       - name: Initialize OpenTofu
-        run: tofu init -reconfigure
+        run: tofu init
 
       - name: Validate OpenTofu configuration
         run: tofu validate 
@@ -41,5 +39,5 @@ jobs:
       - name: Upload OpenTofu state
         uses: actions/upload-artifact@v4
         with:
-          name: terraform-state
+          name: terraform-state1
           path: ./Blazovich_Fabian/Abgabe_2_260603/terraform.tfstate
