@@ -4,7 +4,7 @@ data "exoscale_template" "ubuntu" {
   # Exoscale Zone
   zone = var.zone
 
-  #Name des Ubuntu Imanges (in variables.tf gespeichert)
+  #Name des Ubuntu Imanges (in variables.tf definiert)
   name = var.ubuntu_template
 }
 
@@ -17,7 +17,7 @@ resource "exoscale_compute_instance" "vm" {
   # Name der VM
   name = var.vm_name
 
-  # Verwendetes Ubuntu Template von oben
+  # Verwendetes Ubuntu Template
   template_id = data.exoscale_template.ubuntu.id
 
   # VM Größe

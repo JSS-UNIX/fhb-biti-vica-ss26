@@ -1,14 +1,23 @@
 #cloud-config
 
+# Aktualisiert die Paketlisten
 package_update: true
 package_upgrade: false
 
+# Installiert Nginx automatisch
 packages:
   - nginx
 
+# Erstellt Dateien auf der VM
 write_files:
+
+  # Erstellt die nginx Konfigurationsdatei
   - path: /etc/nginx/sites-available/meine-website
+
+    # Dateiberechtigung
     permissions: "0644"
+
+    # Inhalt der nginx Konfiguration
     content: |
       server {
           listen 80;
@@ -29,8 +38,13 @@ write_files:
           }
       }
 
+# Befehle die beim ersten Start ausgeführt werden
 runcmd:
+
+  # Erstellt das Website-Verzeichnis
   - mkdir -p /var/www/meine-website/html
+
+  # Führt mehrere Linux Befehle aus (Hostname, IP-Adresse, OS-Info, Kernel-Version, RAM, CPU, Disk-Größe, Hypervisor)
   - |
     HOSTNAME=$(hostname)
     IP=$(hostname -I | awk '{print $1}')
@@ -41,6 +55,7 @@ runcmd:
     DISK=$(df -h / | awk 'NR==2 {print $2}')
     HYPERVISOR=$(systemd-detect-virt || echo "unknown")
 
+    # Erstellt die HTML Webite
     cat > /var/www/meine-website/html/index.html <<HTML
     <!DOCTYPE html>
     <html>
@@ -78,6 +93,7 @@ runcmd:
     </html>
     HTML
 
+    # Erstellt die JSON API Datei
     cat > /var/www/meine-website/html/api.json <<JSON
     {
       "hostname": "$HOSTNAME",
@@ -91,8 +107,15 @@ runcmd:
     }
     JSON
 
+  # Aktiviert die nginx Website Konfiguration
   - ln -sf /etc/nginx/sites-available/meine-website /etc/nginx/sites-enabled/meine-website
+
+  # Entfernt die nginx Standardseite
   - rm -f /etc/nginx/sites-enabled/default
+
+  # Überprüft die nginx Konfiguration
   - nginx -t
+
+  # Aktiviert und startet nginx neu
   - systemctl enable nginx
   - systemctl restart nginx

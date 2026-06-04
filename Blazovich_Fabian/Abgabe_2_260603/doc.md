@@ -1,4 +1,4 @@
- # Abgabe 2 - Exoscale VM mit OpenTofu und CloudIniti
+ # Abgabe 2 - Exoscale VM mit OpenTofu und CloudInit
 
  ### **Autor:** Blazovich Fabian; 2410640002 
 <br>
