@@ -29,7 +29,7 @@ jobs:
         run: tofu validate 
 
       - name: Plan OpenTofu
-        run: tofu plan
+        run: tofu plan -state=terraform-2.tfstate
         
       - name: OpenTofu Apply
         run: tofu apply -auto-approve
@@ -39,5 +39,5 @@ jobs:
       - name: Upload OpenTofu state
         uses: actions/upload-artifact@v4
         with:
-          name: terraform-state1
-          path: ./Blazovich_Fabian/Abgabe_2_260603/terraform.tfstate
+          name: terraform-state
+          path: ./Blazovich_Fabian/Abgabe_2_260603/terraform-2.tfstate

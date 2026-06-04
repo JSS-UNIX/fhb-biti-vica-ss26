@@ -25,8 +25,8 @@ jobs:
       - name: Download OpenTofu state
         uses: actions/download-artifact@v4
         with:
-          name: terraform-state1
-          path: ./Blazovich_Fabian
+          name: terraform-state
+          path: ./Blazovich_Fabian/Abgabe_2_260603
 
       - name: Initialize OpenTofu
         run: tofu init
@@ -35,4 +35,4 @@ jobs:
         run: tofu validate
 
       - name: Destroy OpenTofu infrastructure
-        run: tofu destroy -auto-approve
+        run: tofu destroy -auto-approve -state=terraform-2.tfstate
