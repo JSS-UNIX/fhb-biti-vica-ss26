@@ -14,6 +14,8 @@ jobs:
     env:
       TF_VAR_exoscale_key: ${{ secrets.EXOSCALE_API_KEY }}
       TF_VAR_exoscale_secret: ${{ secrets.EXOSCALE_API_SECRET }}
+      TF_WORKING_DIR: ./Blazovich_Fabian/Abgabe_2_260603
+      TF_STATE_PATH: ./Blazovich_Fabian/Abgabe_2_260603/terraform.tfstate
 
     steps:
       - name: Checkout Repository
@@ -26,18 +28,18 @@ jobs:
         run: tofu init
 
       - name: Validate OpenTofu configuration
-        run: tofu validate 
+        run: tofu validate
 
       - name: Plan OpenTofu
-        run: tofu plan -state=terraform-2.tfstate
-        
+        run: tofu plan
+
       - name: OpenTofu Apply
         run: tofu apply -auto-approve
 
- # Speichert den  OpenTofu-State als GitHub Cache.
-      # Dieser State wird später vom Destroy-Workflow benötigt.
-      - name: Upload OpenTofu state
+      - name: Upload Terraform State
         uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: terraform-state
-          path: ./Blazovich_Fabian/Abgabe_2_260603/terraform-2.tfstate
+          name: fblazovich-tofu-state
+          path: ${{ env.TF_STATE_PATH }}
+          retention-days: 5

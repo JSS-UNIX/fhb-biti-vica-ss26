@@ -14,6 +14,8 @@ jobs:
     env:
       TF_VAR_exoscale_key: ${{ secrets.EXOSCALE_API_KEY }}
       TF_VAR_exoscale_secret: ${{ secrets.EXOSCALE_API_SECRET }}
+      TF_WORKING_DIR: ./Blazovich_Fabian/Abgabe_2_260603
+      TF_WORKFLOW_NAME: fblazovich-create-infra.yml
 
     steps:
       - name: Checkout Repository
@@ -22,11 +24,13 @@ jobs:
       - name: Setup OpenTofu
         uses: opentofu/setup-opentofu@v1
 
-      - name: Download OpenTofu state
-        uses: actions/download-artifact@v4
+      - name: Download Terraform State
+        uses: dawidd6/action-download-artifact@v3
         with:
-          name: terraform-state
-          path: ./Blazovich_Fabian/Abgabe_2_260603
+          workflow: ${{ env.TF_WORKFLOW_NAME }}
+          name: fblazovich-tofu-state
+          path: ${{ env.TF_WORKING_DIR }}
+          search_artifacts: true
 
       - name: Initialize OpenTofu
         run: tofu init
@@ -35,4 +39,4 @@ jobs:
         run: tofu validate
 
       - name: Destroy OpenTofu infrastructure
-        run: tofu destroy -auto-approve -state=terraform-2.tfstate
+        run: tofu destroy -auto-approve
