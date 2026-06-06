@@ -1,0 +1,44 @@
+name: "Reinberg Destroy Infrastructure"
+on: workflow_dispatch
+
+jobs:
+  terraform-destroy:
+    runs-on: ubuntu-latest
+
+# Sagt GitHub Actions, dass alle folgenden 'run' Befehle in diesem Ordner starten sollen
+    defaults:
+      run:
+        working-directory: ./Reinberg-Leibel_Albert/Abgabe_2_260606
+
+    env:
+      # Securely pulled from the Secrets Vault
+      TF_VAR_exoscale_api_key: ${{ secrets.EXOSCALE_API_KEY }}
+      TF_VAR_exoscale_api_secret: ${{ secrets.EXOSCALE_API_SECRET }}
+      
+      # Fix for the Node.js 20 deprecation warning
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true  
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform init
+        env:
+          EXOSCALE_API_KEY: ${{ secrets.EXOSCALE_API_KEY }}
+          EXOSCALE_API_SECRET: ${{ secrets.EXOSCALE_API_SECRET }}
+
+      - name: Terraform Plan Destroy
+        run: terraform plan -destroy
+        env:
+          EXOSCALE_API_KEY: ${{ secrets.EXOSCALE_API_KEY }}
+          EXOSCALE_API_SECRET: ${{ secrets.EXOSCALE_API_SECRET }}
+
+      - name: Terraform Destroy
+        run: terraform destroy -auto-approve
+        env:
+          EXOSCALE_API_KEY: ${{ secrets.EXOSCALE_API_KEY }}
+          EXOSCALE_API_SECRET: ${{ secrets.EXOSCALE_API_SECRET }}
