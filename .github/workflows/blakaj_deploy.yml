@@ -27,12 +27,12 @@ jobs:
         with:
           tofu_version: "1.8.0"
 
-      - name: Restore Terraform state
-        uses: actions/cache@v4
+      - name: Download Terraform state
+        uses: dawidd6/action-download-artifact@v6
+        continue-on-error: true
         with:
-          path: Edison_Blakaj/Abgabe_2_260517/terraform/terraform.tfstate
-          key: tfstate-${{ github.ref_name }}
-          restore-keys: tfstate-
+          name: tfstate
+          path: Edison_Blakaj/Abgabe_2_260517/terraform/
 
       - name: Init
         working-directory: Edison_Blakaj/Abgabe_2_260517/terraform
@@ -66,9 +66,9 @@ jobs:
           EXOSCALE_API_SECRET: ${{ secrets.EXOSCALE_API_SECRET }}
         run: tofu output
 
-      - name: Save Terraform state
-        if: always()
-        uses: actions/cache/save@v4
+      - name: Upload Terraform state
+        uses: actions/upload-artifact@v4
         with:
+          name: tfstate
           path: Edison_Blakaj/Abgabe_2_260517/terraform/terraform.tfstate
-          key: tfstate-${{ github.ref_name }}
+          overwrite: true
