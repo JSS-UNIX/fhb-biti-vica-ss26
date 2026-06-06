@@ -1,3 +1,5 @@
+name: "Deploy Infrastructure - Schurian"
+
 on: workflow_dispatch
 jobs:
   terraform:

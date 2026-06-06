@@ -1,3 +1,5 @@
+name: "Destroy Infrastructure - Schurian"
+
 on: workflow_dispatch
 jobs:
   terraform:
