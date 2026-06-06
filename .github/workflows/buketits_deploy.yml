@@ -13,6 +13,9 @@ jobs:
     env:
       EXOSCALE_API_KEY: ${{ secrets.EXOSCALE_API_KEY }}
       EXOSCALE_API_SECRET: ${{ secrets.EXOSCALE_API_SECRET }}
+    
+      TF_STATE_PATH: ./Buketits_David/Abgabe_2_Exoscale/terraform.tfstate
+
 
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -34,3 +37,14 @@ jobs:
       - name: Terraform Apply
         # -auto-approve ist wichtig, da in der Pipeline keine manuelle Eingabe von "yes" möglich ist
         run: terraform apply -auto-approve 
+
+      - name: Commit Terraform state
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          git status
+          git add terraform.tfstate terraform.tfstate.backup || true
+          
+          git commit -m "Update Terraform state" || echo "No state changes to commit"
+          git push
