@@ -1,424 +1,77 @@
 #cloud-config
-# ============================================================
-# cloud-init.yaml – Automatische OS-Konfiguration beim ersten Boot
-#
-# Dieses Script wird von CloudInit beim ersten Start der VM ausgeführt.
-# Es installiert einen Python HTTP-Server, der technische VM-Details
-# als HTML-Seite ausliefert.
-# ============================================================
 
-# System-Pakete aktualisieren und benötigte Tools installieren
+# 1. System updaten
 package_update: true
-package_upgrade: true
+
+# 2. Pakete installieren
 packages:
-  - python3          # Für den eingebauten HTTP-Server
-  - python3-psutil   # Für detaillierte Systeminformationen
-  - curl             # Für Debugging und Health-Checks
-  - dmidecode        # Für Hardware/Hypervisor-Informationen (benötigt root)
+  - nginx
+  - certbot
+  - python3-certbot-nginx
+  - curl
+  - gnupg
+  - ca-certificates
 
-# Benutzer für den Web-Service erstellen
-users:
-  - name: vminfo
-    groups: [sudo]
-    shell: /bin/bash
-    sudo: ALL=(ALL) NOPASSWD:ALL
-    # Kein SSH-Key nötig, da nur der Service-Account ist
-
-# Dateien auf dem System erstellen
+# 3. Unser Bash-Skript zur Generierung des Dashboards erstellen
 write_files:
-  # --------------------------------------------------------
-  # Python HTTP-Server Script: Liest Systeminformationen
-  # und gibt sie als HTML-Seite aus
-  # --------------------------------------------------------
-  - path: /opt/vminfo/server.py
-    owner: root:root
+  - path: /usr/local/bin/init-dashboard.sh
     permissions: '0755'
     content: |
-      #!/usr/bin/env python3
-      """
-      VM-Info HTTP-Server
-      Liefert technische Details über die VM als HTML-Seite.
-      Lauscht auf Port 80.
-      """
-      import http.server
-      import socketserver
-      import subprocess
-      import platform
-      import socket
-      import json
-      import os
-      import re
-      from datetime import datetime
+      #!/bin/bash
+      
+      # Systemdaten sammeln
+      PUBLIC_IP=$(curl -s --max-time 5 http://ifconfig.me || echo "Nicht ermittelbar")
+      MEMORY=$(free -h | awk '/^Mem:/ {print "Gesamt: " $2 " / Genutzt: " $3}')
+      KERNEL=$(uname -srm)
+      HYPERVISOR=$(systemd-detect-virt || echo "Unbekannt")
+      ROOT_STORAGE=$(df -h / | awk 'NR==2 {print "Größe: " $2 " / Frei: " $4 " (" $5 " genutzt)"}')
+      FS_TABLE=$(df -hT -x tmpfs -x devtmpfs | tail -n +2 | awk '{print "<tr><td>"$1"</td><td>"$2"</td><td>"$3"</td><td>"$5"</td><td>"$7"</td></tr>"}')
 
-      PORT = 80  # HTTP Standard-Port
-
-      def run_cmd(cmd):
-          """Führt einen Shell-Befehl aus und gibt die Ausgabe zurück."""
-          try:
-              result = subprocess.run(
-                  cmd, shell=True, capture_output=True, text=True, timeout=10
-              )
-              return result.stdout.strip() if result.returncode == 0 else "N/A"
-          except Exception:
-              return "N/A"
-
-      def get_vm_info():
-          """Sammelt alle relevanten VM/System-Informationen."""
-          info = {}
-
-          # --- Netzwerk-Informationen ---
-          # Hostname der VM
-          info['hostname'] = socket.gethostname()
-
-          # Alle IP-Adressen (IPv4)
-          try:
-              s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-              s.connect(("8.8.8.8", 80))
-              info['primary_ip'] = s.getsockname()[0]
-              s.close()
-          except Exception:
-              info['primary_ip'] = "N/A"
-
-          # Alle Netzwerk-Interfaces
-          ip_output = run_cmd("ip -4 addr show | grep 'inet ' | awk '{print $2, $NF}'")
-          info['network_interfaces'] = ip_output
-
-          # --- Betriebssystem-Informationen ---
-          info['os'] = platform.system()
-          info['os_release'] = run_cmd("lsb_release -d | cut -d: -f2")
-          info['kernel'] = platform.release()
-          info['kernel_full'] = run_cmd("uname -r")
-          info['architecture'] = platform.machine()
-          info['uptime'] = run_cmd("uptime -p")
-          info['boot_time'] = run_cmd("who -b | awk '{print $3, $4}'")
-          info['current_time'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
-
-          # --- CPU-Informationen ---
-          info['cpu_model'] = run_cmd("grep 'model name' /proc/cpuinfo | head -1 | cut -d: -f2")
-          info['cpu_cores'] = run_cmd("nproc")
-          info['cpu_threads'] = run_cmd("grep -c processor /proc/cpuinfo")
-          info['cpu_usage'] = run_cmd("top -bn1 | grep 'Cpu(s)' | awk '{print $2}' | cut -d. -f1")
-
-          # --- Memory/RAM ---
-          mem = run_cmd("free -h | grep '^Mem'")
-          mem_parts = mem.split() if mem != "N/A" else []
-          info['mem_total']     = mem_parts[1] if len(mem_parts) > 1 else "N/A"
-          info['mem_used']      = mem_parts[2] if len(mem_parts) > 2 else "N/A"
-          info['mem_free']      = mem_parts[3] if len(mem_parts) > 3 else "N/A"
-          info['mem_available'] = mem_parts[6] if len(mem_parts) > 6 else "N/A"
-
-          # Swap
-          swap = run_cmd("free -h | grep '^Swap'")
-          swap_parts = swap.split() if swap != "N/A" else []
-          info['swap_total'] = swap_parts[1] if len(swap_parts) > 1 else "N/A"
-          info['swap_used']  = swap_parts[2] if len(swap_parts) > 2 else "N/A"
-
-          # --- Storage/Disk ---
-          info['disk_usage'] = run_cmd("df -h | grep -v tmpfs | grep -v udev")
-          info['block_devices'] = run_cmd("lsblk -o NAME,SIZE,TYPE,MOUNTPOINT | grep -v loop")
-
-          # --- Dateisysteme ---
-          info['filesystems'] = run_cmd("mount | grep -E '^/dev' | awk '{print $1, $3, $5}'")
-
-          # --- Hypervisor / Virtualisierung ---
-          info['virt_type'] = run_cmd("systemd-detect-virt 2>/dev/null || echo 'unknown'")
-          info['hypervisor'] = run_cmd(
-              "dmidecode -s system-product-name 2>/dev/null || "
-              "cat /sys/class/dmi/id/product_name 2>/dev/null || echo 'N/A'"
-          )
-          info['hypervisor_vendor'] = run_cmd(
-              "dmidecode -s system-manufacturer 2>/dev/null || "
-              "cat /sys/class/dmi/id/sys_vendor 2>/dev/null || echo 'N/A'"
-          )
-
-          # --- Cloud-spezifische Informationen (Exoscale Metadata) ---
-          # Exoscale stellt Metadaten über einen lokalen HTTP-Endpunkt bereit
-          meta_base = "http://169.254.169.254/latest/meta-data"
-          info['cloud_instance_id']   = run_cmd(f"curl -s --max-time 2 {meta_base}/instance-id")
-          info['cloud_instance_type'] = run_cmd(f"curl -s --max-time 2 {meta_base}/instance-type")
-          info['cloud_az']            = run_cmd(f"curl -s --max-time 2 {meta_base}/availability-zone")
-          info['cloud_public_ip']     = run_cmd(f"curl -s --max-time 2 {meta_base}/public-ipv4")
-
-          # --- Laufende Prozesse (Top 5 nach CPU) ---
-          info['top_processes'] = run_cmd(
-              "ps aux --sort=-%cpu | head -6 | awk '{print $1, $2, $3, $4, $11}'"
-          )
-
-          return info
-
-      def generate_html(info):
-          """Generiert eine HTML-Seite mit allen VM-Informationen."""
-          html = f"""<!DOCTYPE html>
+      # HTML-Datei generieren
+      cat <<EOF > /var/www/html/index.html
+      <!DOCTYPE html>
       <html lang="de">
       <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <meta http-equiv="refresh" content="30">  <!-- Auto-Refresh alle 30 Sekunden -->
-          <title>VM Info – {info.get('hostname', 'Unknown')}</title>
+          <title>VM Dashboard</title>
           <style>
-              /* Modernes, technisches Design */
-              :root {{
-                  --bg: #0d1117;
-                  --surface: #161b22;
-                  --border: #30363d;
-                  --accent: #58a6ff;
-                  --success: #3fb950;
-                  --text: #c9d1d9;
-                  --text-dim: #8b949e;
-                  --mono: 'Courier New', monospace;
-              }}
-              * {{ box-sizing: border-box; margin: 0; padding: 0; }}
-              body {{
-                  background: var(--bg);
-                  color: var(--text);
-                  font-family: var(--mono);
-                  padding: 2rem;
-                  line-height: 1.6;
-              }}
-              header {{
-                  border-bottom: 1px solid var(--border);
-                  padding-bottom: 1rem;
-                  margin-bottom: 2rem;
-              }}
-              h1 {{ color: var(--accent); font-size: 1.8rem; }}
-              h2 {{
-                  color: var(--success);
-                  font-size: 1rem;
-                  text-transform: uppercase;
-                  letter-spacing: 0.1em;
-                  margin: 1.5rem 0 0.75rem;
-                  padding-bottom: 0.25rem;
-                  border-bottom: 1px solid var(--border);
-              }}
-              .grid {{
-                  display: grid;
-                  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-                  gap: 1rem;
-              }}
-              .card {{
-                  background: var(--surface);
-                  border: 1px solid var(--border);
-                  border-radius: 6px;
-                  padding: 1rem;
-              }}
-              .card h2 {{ margin-top: 0; }}
-              table {{ width: 100%; border-collapse: collapse; font-size: 0.85rem; }}
-              td {{
-                  padding: 0.35rem 0.5rem;
-                  border-bottom: 1px solid var(--border);
-                  vertical-align: top;
-              }}
-              td:first-child {{
-                  color: var(--text-dim);
-                  white-space: nowrap;
-                  width: 40%;
-              }}
-              td:last-child {{ color: var(--text); word-break: break-all; }}
-              pre {{
-                  background: var(--bg);
-                  border: 1px solid var(--border);
-                  border-radius: 4px;
-                  padding: 0.75rem;
-                  font-size: 0.75rem;
-                  overflow-x: auto;
-                  white-space: pre-wrap;
-                  word-break: break-all;
-              }}
-              .badge {{
-                  display: inline-block;
-                  background: var(--accent);
-                  color: #000;
-                  padding: 0.15rem 0.5rem;
-                  border-radius: 3px;
-                  font-size: 0.75rem;
-                  font-weight: bold;
-                  margin-left: 0.5rem;
-              }}
-              .timestamp {{
-                  color: var(--text-dim);
-                  font-size: 0.8rem;
-                  margin-top: 0.5rem;
-              }}
+              body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 40px auto; max-width: 900px; background-color: #f4f7f6; color: #333; }
+              h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+              p.subtitle { color: #7f8c8d; font-style: italic; margin-bottom: 30px; }
+              table { width: 100%; border-collapse: collapse; margin-bottom: 30px; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+              th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #e0e0e0; }
+              th { background-color: #3498db; color: white; text-transform: uppercase; font-size: 0.9em; }
+              tr:hover { background-color: #f5f5f5; }
           </style>
       </head>
       <body>
-          <header>
-              <h1>&#128165; VM Info Dashboard</h1>
-              <div>{info.get('hostname', 'Unknown Host')}
-                  <span class="badge">{info.get('virt_type', 'unknown')}</span>
-              </div>
-              <div class="timestamp">
-                  Abgerufen: {info.get('current_time', 'N/A')} &nbsp;|&nbsp;
-                  Auto-Refresh: 30s &nbsp;|&nbsp;
-                  Uptime: {info.get('uptime', 'N/A')}
-              </div>
-          </header>
-
-          <div class="grid">
-
-              <!-- Netzwerk -->
-              <div class="card">
-                  <h2>&#127760; Netzwerk</h2>
-                  <table>
-                      <tr><td>Hostname</td><td>{info.get('hostname')}</td></tr>
-                      <tr><td>Primäre IP</td><td>{info.get('primary_ip')}</td></tr>
-                      <tr><td>Öffentliche IP</td><td>{info.get('cloud_public_ip')}</td></tr>
-                  </table>
-                  <h2>Interfaces</h2>
-                  <pre>{info.get('network_interfaces')}</pre>
-              </div>
-
-              <!-- Betriebssystem -->
-              <div class="card">
-                  <h2>&#129499; Betriebssystem</h2>
-                  <table>
-                      <tr><td>OS</td><td>{info.get('os_release')}</td></tr>
-                      <tr><td>Kernel</td><td>{info.get('kernel_full')}</td></tr>
-                      <tr><td>Architektur</td><td>{info.get('architecture')}</td></tr>
-                      <tr><td>Boot-Zeit</td><td>{info.get('boot_time')}</td></tr>
-                  </table>
-              </div>
-
-              <!-- CPU -->
-              <div class="card">
-                  <h2>&#9881; CPU</h2>
-                  <table>
-                      <tr><td>Modell</td><td>{info.get('cpu_model')}</td></tr>
-                      <tr><td>Kerne</td><td>{info.get('cpu_cores')}</td></tr>
-                      <tr><td>Threads</td><td>{info.get('cpu_threads')}</td></tr>
-                      <tr><td>Auslastung</td><td>{info.get('cpu_usage')}%</td></tr>
-                  </table>
-              </div>
-
-              <!-- Memory -->
-              <div class="card">
-                  <h2>&#128190; Memory / RAM</h2>
-                  <table>
-                      <tr><td>Gesamt</td><td>{info.get('mem_total')}</td></tr>
-                      <tr><td>Verwendet</td><td>{info.get('mem_used')}</td></tr>
-                      <tr><td>Frei</td><td>{info.get('mem_free')}</td></tr>
-                      <tr><td>Verfügbar</td><td>{info.get('mem_available')}</td></tr>
-                      <tr><td>Swap Gesamt</td><td>{info.get('swap_total')}</td></tr>
-                      <tr><td>Swap Verwendet</td><td>{info.get('swap_used')}</td></tr>
-                  </table>
-              </div>
-
-              <!-- Hypervisor / Cloud -->
-              <div class="card">
-                  <h2>&#9729; Hypervisor / Cloud</h2>
-                  <table>
-                      <tr><td>Virtualisierung</td><td>{info.get('virt_type')}</td></tr>
-                      <tr><td>Hypervisor</td><td>{info.get('hypervisor')}</td></tr>
-                      <tr><td>Hersteller</td><td>{info.get('hypervisor_vendor')}</td></tr>
-                      <tr><td>Instance ID</td><td>{info.get('cloud_instance_id')}</td></tr>
-                      <tr><td>Instance Typ</td><td>{info.get('cloud_instance_type')}</td></tr>
-                      <tr><td>Availability Zone</td><td>{info.get('cloud_az')}</td></tr>
-                  </table>
-              </div>
-
-              <!-- Storage -->
-              <div class="card">
-                  <h2>&#128190; Storage / Disk</h2>
-                  <pre>{info.get('disk_usage')}</pre>
-                  <h2>Block Devices</h2>
-                  <pre>{info.get('block_devices')}</pre>
-              </div>
-
-              <!-- Dateisysteme -->
-              <div class="card">
-                  <h2>&#128193; Dateisysteme</h2>
-                  <pre>{info.get('filesystems')}</pre>
-              </div>
-
-              <!-- Prozesse -->
-              <div class="card">
-                  <h2>&#128200; Top Prozesse (CPU)</h2>
-                  <pre>{info.get('top_processes')}</pre>
-              </div>
-
-          </div>
+          <h1>Server Dashboard</h1>
+          <p class="subtitle">Hello World! David is watching you!</p>
+          
+          <h2>System Eckdaten</h2>
+          <table>
+              <tr><th>Eigenschaft</th><th>Wert</th></tr>
+              <tr><td>Öffentliche IP</td><td><strong>$PUBLIC_IP</strong></td></tr>
+              <tr><td>Kernel & Architektur</td><td>$KERNEL</td></tr>
+              <tr><td>Hypervisor</td><td>$HYPERVISOR</td></tr>
+              <tr><td>Arbeitsspeicher (RAM)</td><td>$MEMORY</td></tr>
+              <tr><td>System-Speicher (Root)</td><td>$ROOT_STORAGE</td></tr>
+          </table>
+          
+          <h2>Detaillierte Filesysteme</h2>
+          <table>
+              <tr><th>Dateisystem</th><th>Typ</th><th>Gesamt</th><th>Verfügbar</th><th>Mountpoint</th></tr>
+              $FS_TABLE
+          </table>
       </body>
-      </html>"""
-          return html
+      </html>
+      EOF
 
-      class VMInfoHandler(http.server.BaseHTTPRequestHandler):
-          """HTTP Request Handler: Beantwortet GET-Anfragen mit VM-Info HTML."""
-
-          def do_GET(self):
-              # Health-Check Endpunkt für Monitoring
-              if self.path == '/health':
-                  self.send_response(200)
-                  self.send_header('Content-Type', 'text/plain')
-                  self.end_headers()
-                  self.wfile.write(b'OK')
-                  return
-
-              # Haupt-Endpunkt: VM-Informationen als HTML
-              self.send_response(200)
-              self.send_header('Content-Type', 'text/html; charset=utf-8')
-              self.end_headers()
-
-              # Systeminformationen sammeln und als HTML ausgeben
-              info = get_vm_info()
-              html = generate_html(info)
-              self.wfile.write(html.encode('utf-8'))
-
-          def log_message(self, format, *args):
-              """Minimales Logging: nur Timestamp und Request."""
-              print(f"[{datetime.now().strftime('%H:%M:%S')}] {format % args}")
-
-      if __name__ == '__main__':
-          # Reuse-Address: verhindert "Address already in use" beim Neustart
-          socketserver.TCPServer.allow_reuse_address = True
-
-          with socketserver.TCPServer(("", PORT), VMInfoHandler) as httpd:
-              print(f"VM-Info Server startet auf Port {PORT}")
-              print(f"Dashboard: http://localhost:{PORT}")
-              httpd.serve_forever()
-
-  # --------------------------------------------------------
-  # Systemd Service Unit: Startet den Python-Server automatisch
-  # beim Boot und hält ihn am Laufen
-  # --------------------------------------------------------
-  - path: /etc/systemd/system/vminfo.service
-    owner: root:root
-    permissions: '0644'
-    content: |
-      [Unit]
-      Description=VM Info HTTP Server
-      # Startet nach dem Netzwerk (sicherstellt, dass Port bindbar ist)
-      After=network.target
-
-      [Service]
-      # Python-Server als root starten (nötig für Port 80 und dmidecode)
-      ExecStart=/usr/bin/python3 /opt/vminfo/server.py
-      # Automatisch neu starten bei Absturz
-      Restart=always
-      RestartSec=5
-      # Umgebungsvariablen
-      Environment=PYTHONUNBUFFERED=1
-
-      [Install]
-      # Startet beim normalen System-Boot
-      WantedBy=multi-user.target
-
-# Befehle die nach dem Schreiben der Dateien ausgeführt werden
+# 4. Befehle nach der Installation ausführen
 runcmd:
-  # Verzeichnis-Rechte setzen
-  - chmod 755 /opt/vminfo
-  - chmod 755 /opt/vminfo/server.py
-
-  # Systemd neu laden damit die neue Service Unit erkannt wird
-  - systemctl daemon-reload
-
-  # VM-Info Service aktivieren (startet bei jedem Boot automatisch)
-  - systemctl enable vminfo.service
-
-  # VM-Info Service sofort starten (nicht erst beim nächsten Boot)
-  - systemctl start vminfo.service
-
-# Finales Logging: Bestätigung dass CloudInit erfolgreich war
-final_message: |
-  CloudInit abgeschlossen!
-  VM-Info Server sollte jetzt unter http://<PUBLIC_IP> erreichbar sein.
-  Status prüfen: systemctl status vminfo.service
+  # Das Skript ausführen, um die index.html zu befüllen
+  - /usr/local/bin/init-dashboard.sh
+  # Nginx aktivieren und starten
+  - systemctl enable nginx
+  - systemctl start nginx
