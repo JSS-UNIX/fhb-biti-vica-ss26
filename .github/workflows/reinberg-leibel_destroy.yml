@@ -11,9 +11,8 @@ jobs:
         working-directory: ./Reinberg-Leibel_Albert/Abgabe_2_260606
 
     env:
-      # Securely pulled from the Secrets Vault
-      TF_VAR_exoscale_api_key: ${{ secrets.EXOSCALE_API_KEY }}
-      TF_VAR_exoscale_api_secret: ${{ secrets.EXOSCALE_API_SECRET }}
+      EXOSCALE_API_KEY: ${{ secrets.EXOSCALE_API_KEY }}
+      EXOSCALE_API_SECRET: ${{ secrets.EXOSCALE_API_SECRET }}
       
       # Fix for the Node.js 20 deprecation warning
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true  
