@@ -37,17 +37,17 @@ write_files:
           <title>VM Dashboard</title>
           <style>
               body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 40px auto; max-width: 900px; background-color: #f4f7f6; color: #333; }
-              h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
-              p.subtitle { color: #7f8c8d; font-style: italic; margin-bottom: 30px; }
+              h1 { color: #2c3e50; border-bottom: 2px solid #7F007F; padding-bottom: 10px; }
+              h2.subtitle { color: #7f8c8d; font-style: italic; margin-bottom: 30px; }
               table { width: 100%; border-collapse: collapse; margin-bottom: 30px; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
               th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #e0e0e0; }
-              th { background-color: #3498db; color: white; text-transform: uppercase; font-size: 0.9em; }
+              th { background-color: #7F007F; color: white; text-transform: uppercase; font-size: 0.9em; }
               tr:hover { background-color: #f5f5f5; }
           </style>
       </head>
       <body>
           <h1>Server Dashboard</h1>
-          <p class="subtitle">Hello World! David is watching you!</p>
+          <h2 class="subtitle">Hello World! David is watching you!</h2>
           
           <h2>System Eckdaten</h2>
           <table>
