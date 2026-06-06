@@ -22,12 +22,11 @@ jobs:
         with:
           tofu_version: "1.8.0"
 
-      - name: Restore Terraform state
-        uses: actions/cache@v4
+      - name: Download Terraform state
+        uses: dawidd6/action-download-artifact@v6
         with:
-          path: Edison_Blakaj/Abgabe_2_260517/terraform/terraform.tfstate
-          key: tfstate-${{ github.ref_name }}
-          restore-keys: tfstate-
+          name: tfstate
+          path: Edison_Blakaj/Abgabe_2_260517/terraform/
 
       - name: Init
         working-directory: Edison_Blakaj/Abgabe_2_260517/terraform
