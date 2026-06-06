@@ -27,7 +27,7 @@ data "exoscale_template" "ubuntu" {
 # 2. Security Group (Firewall) erstellen
 # Hinweis: SSH (Port 22) ist absichtlich nicht konfiguriert für maximale Sicherheit.
 resource "exoscale_security_group" "web" {
-  name        = "web-server-sg"
+  name        = "buketits-sg"
   description = "Erlaubt reinen Web-Traffic (HTTP und HTTPS)"
 }
 
