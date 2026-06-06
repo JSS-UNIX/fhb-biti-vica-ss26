@@ -1,3 +1,8 @@
+name: Deploy Infrastructure
+
+on:
+  workflow_dispatch:
+
 jobs:
   terraform:
     runs-on: ubuntu-latest
@@ -21,14 +26,8 @@ jobs:
           EXOSCALE_API_SECRET: ${{ secrets.EXOSCALE_API_SECRET }}
 
       - name: Terraform Apply
-        # Füge -auto-approve hinzu, da in einer Pipeline niemand "yes" tippen kann
+        # -auto-approve ist wichtig, da in der Pipeline keine manuelle Eingabe von "yes" möglich ist
         run: terraform apply -auto-approve 
-        env:
-          EXOSCALE_API_KEY: ${{ secrets.EXOSCALE_API_KEY }}
-          EXOSCALE_API_SECRET: ${{ secrets.EXOSCALE_API_SECRET }}
-
-      - name: Terraform Destroy
-        run: terraform destroy -auto-approve
         env:
           EXOSCALE_API_KEY: ${{ secrets.EXOSCALE_API_KEY }}
           EXOSCALE_API_SECRET: ${{ secrets.EXOSCALE_API_SECRET }}
