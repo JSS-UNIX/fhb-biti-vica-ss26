@@ -30,19 +30,19 @@ jobs:
       - name: Restore Terraform state
         uses: actions/cache@v4
         with:
-          path: Abgabe_2_260517/terraform/terraform.tfstate
+          path: Edison_Blakaj/Abgabe_2_260517/terraform/terraform.tfstate
           key: tfstate-${{ github.ref_name }}
           restore-keys: tfstate-
 
       - name: Init
-        working-directory: Abgabe_2_260517/terraform
+        working-directory: Edison_Blakaj/Abgabe_2_260517/terraform
         env:
           EXOSCALE_API_KEY:    ${{ secrets.EXOSCALE_API_KEY }}
           EXOSCALE_API_SECRET: ${{ secrets.EXOSCALE_API_SECRET }}
         run: tofu init
 
       - name: Plan
-        working-directory: Abgabe_2_260517/terraform
+        working-directory: Edison_Blakaj/Abgabe_2_260517/terraform
         env:
           EXOSCALE_API_KEY:    ${{ secrets.EXOSCALE_API_KEY }}
           EXOSCALE_API_SECRET: ${{ secrets.EXOSCALE_API_SECRET }}
@@ -53,14 +53,14 @@ jobs:
             -out=tfplan
 
       - name: Apply
-        working-directory: Abgabe_2_260517/terraform
+        working-directory: Edison_Blakaj/Abgabe_2_260517/terraform
         env:
           EXOSCALE_API_KEY:    ${{ secrets.EXOSCALE_API_KEY }}
           EXOSCALE_API_SECRET: ${{ secrets.EXOSCALE_API_SECRET }}
         run: tofu apply -auto-approve tfplan
 
       - name: Show outputs
-        working-directory: Abgabe_2_260517/terraform
+        working-directory: Edison_Blakaj/Abgabe_2_260517/terraform
         env:
           EXOSCALE_API_KEY:    ${{ secrets.EXOSCALE_API_KEY }}
           EXOSCALE_API_SECRET: ${{ secrets.EXOSCALE_API_SECRET }}
@@ -70,5 +70,5 @@ jobs:
         if: always()
         uses: actions/cache/save@v4
         with:
-          path: Abgabe_2_260517/terraform/terraform.tfstate
+          path: Edison_Blakaj/Abgabe_2_260517/terraform/terraform.tfstate
           key: tfstate-${{ github.ref_name }}
