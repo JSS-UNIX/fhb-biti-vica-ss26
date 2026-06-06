@@ -3,7 +3,13 @@ name: "Buketits Deploy Infrastructure"
 on: workflow_dispatch
 jobs:
   terraform:
+
     runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./Buketits_David/Abgabe_2_Exoscale
+
     env:
       EXOSCALE_API_KEY: ${{ secrets.EXOSCALE_API_KEY }}
       EXOSCALE_API_SECRET: ${{ secrets.EXOSCALE_API_SECRET }}
