@@ -40,7 +40,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
           git status
-          git add terraform.tfstate terraform.tfstate.backup || true
+          git add terraform.tfstate || true
           
           git commit -m "Update Terraform state" || echo "No state changes to commit"
           git push
