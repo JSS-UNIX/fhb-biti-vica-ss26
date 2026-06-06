@@ -12,7 +12,6 @@ jobs:
         EXOSCALE_API_KEY: ${{ secrets.EXOSCALE_API_KEY }}
         EXOSCALE_API_SECRET: ${{ secrets.EXOSCALE_API_SECRET }}
 
-        TF_STATE_PATH: ./Buketits_David/Abgabe_2_Exoscale/terraform.tfstate
 
     steps:
       - name: Checkout Code

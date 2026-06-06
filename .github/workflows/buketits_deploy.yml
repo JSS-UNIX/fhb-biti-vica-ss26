@@ -15,9 +15,6 @@ jobs:
       EXOSCALE_API_KEY: ${{ secrets.EXOSCALE_API_KEY }}
       EXOSCALE_API_SECRET: ${{ secrets.EXOSCALE_API_SECRET }}
     
-      TF_STATE_PATH: ./Buketits_David/Abgabe_2_Exoscale/terraform.tfstate
-
-
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
