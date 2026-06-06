@@ -3,7 +3,7 @@ permissions:
   contents: write
 on: workflow_dispatch
 jobs:
-  terraform-destroy:
+  terraform:
     runs-on: ubuntu-latest
     defaults:
       run:
