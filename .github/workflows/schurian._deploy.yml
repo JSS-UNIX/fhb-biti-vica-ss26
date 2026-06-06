@@ -9,9 +9,7 @@ jobs:
           EXOSCALE_API_SECRET: ${{ secrets.EXOSCALE_API_SECRET }}
 
           TF_WORKING_DIR: ./Schurian_Johannes/Abgabe_2_TERRAFORM
-          TF_STATE_PATH: ./Schurian_Johannes/Abgabe_2_TERRAFORM/terraform.tfstate
-
-          TF_VAR_second_level_domain: ${{ vars.SECOND_LEVEL_DOMAIN || 'schurian' }}
+          TF_STATE_PATH: ./Schurian_Johannes/Abgabe_2_TERRAFORM/terraform.tfstate         
 
     steps:
       - name: Checkout Code
