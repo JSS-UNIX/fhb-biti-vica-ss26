@@ -1,7 +1,5 @@
 name: "Reinberg Destroy Infrastructure"
-
 on: workflow_dispatch
-
 jobs:
   terraform-destroy:
     runs-on: ubuntu-latest
