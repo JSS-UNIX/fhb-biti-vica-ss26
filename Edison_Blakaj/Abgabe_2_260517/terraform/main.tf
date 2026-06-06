@@ -13,9 +13,8 @@ terraform {
 provider "exoscale" {}
 
 data "exoscale_template" "ubuntu" {
-  zone   = var.zone
-  name   = "Linux Ubuntu 24.04 LTS 64-bit"
-  family = "ubuntu"
+  zone = var.zone
+  name = "Linux Ubuntu 24.04 LTS 64-bit"
 }
 
 resource "exoscale_security_group" "web" {
