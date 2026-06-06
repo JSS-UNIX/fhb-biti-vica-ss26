@@ -10,7 +10,7 @@ jobs:
       run:
         working-directory: ./Reinberg-Leibel_Albert/Abgabe_2_260606
 
- env:
+    env:
       # Securely pulled from the Secrets Vault
       TF_VAR_exoscale_api_key: ${{ secrets.EXOSCALE_API_KEY }}
       TF_VAR_exoscale_api_secret: ${{ secrets.EXOSCALE_API_SECRET }}
