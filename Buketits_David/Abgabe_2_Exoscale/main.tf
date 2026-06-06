@@ -54,7 +54,7 @@ resource "exoscale_security_group_rule" "https" {
 # 3. Die virtuelle Maschine (Compute Instance) erstellen
 resource "exoscale_compute_instance" "web_server" {
   zone               = local.zone
-  name               = "nginx-dashboard-server"
+  name               = "buketits-web-server"
   template_id        = data.exoscale_template.ubuntu.id
   type               = "standard.micro" 
   disk_size          = 10               
