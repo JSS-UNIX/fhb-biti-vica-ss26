@@ -8,8 +8,8 @@ jobs:
         TF_VAR_exoscale_api_key: ${{ secrets.EXOSCALE_API_KEY }}
         TF_VAR_exoscale_api_secret: ${{ secrets.EXOSCALE_API_SECRET }}
 
-        TF_WORKING_DIR: Buketits_David/Abgabe_2_Exoscale
-        TF_STATE_PATH: Buketits_David/Abgabe_2_Exoscale/terraform.tfstate
+        working-directory: ./Buketits_David/Abgabe_2_Exoscale
+        TF_STATE_PATH: ./Buketits_David/Abgabe_2_Exoscale/terraform.tfstate
 
     steps:
       - name: Checkout Code

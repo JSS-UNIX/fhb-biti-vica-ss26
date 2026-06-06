@@ -8,10 +8,9 @@ jobs:
       EXOSCALE_API_KEY: ${{ secrets.EXOSCALE_API_KEY }}
       EXOSCALE_API_SECRET: ${{ secrets.EXOSCALE_API_SECRET }}
     
-      TF_WORKING_DIR: Buketits_David/Abgabe_2_Exoscale
-      TF_STATE_PATH: Buketits_David/Abgabe_2_Exoscale/terraform.tfstate
+      working-directory: ./Buketits_David/Abgabe_2_Exoscale
+      TF_STATE_PATH: ./Buketits_David/Abgabe_2_Exoscale/terraform.tfstate
 
-      TF_VAR_second_level_domain: ${{ vars.SECOND_LEVEL_DOMAIN || 'buketits' }}
 
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
