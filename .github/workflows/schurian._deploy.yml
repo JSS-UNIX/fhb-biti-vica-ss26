@@ -1,0 +1,29 @@
+on: workflow_dispatch
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+ 
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+ 
+      - name: Terraform Init
+        run: terraform init
+        env:
+          EXOSCALE_API_KEY: ${{ secrets.EXOSCALE_API_KEY }}
+          EXOSCALE_API_SECRET: ${{ secrets.EXOSCALE_API_SECRET }}
+ 
+      - name: Terraform Plan
+        run: terraform plan
+        env:
+          EXOSCALE_API_KEY: ${{ secrets.EXOSCALE_API_KEY }}
+          EXOSCALE_API_SECRET: ${{ secrets.EXOSCALE_API_SECRET }}
+ 
+      - name: Terraform Apply
+        # Füge -auto-approve hinzu, da in einer Pipeline niemand "yes" tippen kann
+        run: terraform apply -auto-approve
+        env:
+          EXOSCALE_API_KEY: ${{ secrets.EXOSCALE_API_KEY }}
+          EXOSCALE_API_SECRET: ${{ secrets.EXOSCALE_API_SECRET }}
