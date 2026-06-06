@@ -19,10 +19,10 @@ locals {
 }
 
 # 1. Das aktuellste Ubuntu-Template in der gewählten Zone suchen
-data "exoscale_compute_template" "ubuntu" {
+#data "exoscale_compute_template" "ubuntu" {
   zone = local.zone
   name = local.template
-}
+#}
 
 # 2. Security Group (Firewall) erstellen
 # Hinweis: SSH (Port 22) ist absichtlich nicht konfiguriert für maximale Sicherheit.
