@@ -355,12 +355,12 @@ write_files:
               try_files $uri $uri/ =404;
           }
 
-          location /api {
-              rewrite ^/api$ /api.json break;
-              root /var/www/html;
-              default_type application/json;
-              add_header Access-Control-Allow-Origin *;
-              add_header Cache-Control "no-cache, no-store, must-revalidate";
+          location = /api {
+            root /var/www/html;
+            try_files /api.json =404;
+            default_type application/json;
+            add_header Access-Control-Allow-Origin *;
+            add_header Cache-Control "no-cache, no-store, must-revalidate";
           }
       }
 
