@@ -55,7 +55,7 @@ resource "exoscale_security_group_rule" "https" {
 resource "exoscale_compute_instance" "web_server" {
   zone               = local.zone
   name               = "nginx-dashboard-server"
-  template_id        = data.exoscale_compute_template.ubuntu.id
+  template_id        = data.exoscale_template.ubuntu.id
   type               = "standard.micro" 
   disk_size          = 10               
   security_group_ids = [exoscale_security_group.web.id]
