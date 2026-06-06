@@ -17,6 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      actions: write
 
     steps:
       - name: Checkout
@@ -27,12 +28,14 @@ jobs:
         with:
           tofu_version: "1.8.0"
 
-      - name: Download Terraform state
-        uses: dawidd6/action-download-artifact@v6
+      - name: Download existing Terraform state
+        uses: actions/download-artifact@v4
         continue-on-error: true
         with:
           name: tfstate
           path: Edison_Blakaj/Abgabe_2_260517/terraform/
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
 
       - name: Init
         working-directory: Edison_Blakaj/Abgabe_2_260517/terraform
@@ -68,7 +71,9 @@ jobs:
 
       - name: Upload Terraform state
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: tfstate
           path: Edison_Blakaj/Abgabe_2_260517/terraform/terraform.tfstate
           overwrite: true
+          retention-days: 90
