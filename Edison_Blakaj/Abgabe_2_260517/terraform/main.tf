@@ -12,7 +12,7 @@ terraform {
 # EXOSCALE_API_KEY and EXOSCALE_API_SECRET
 provider "exoscale" {}
 
-data "exoscale_compute_template" "ubuntu" {
+data "exoscale_template" "ubuntu" {
   zone   = var.zone
   name   = "Linux Ubuntu 24.04 LTS 64-bit"
   family = "ubuntu"
@@ -53,7 +53,7 @@ resource "exoscale_security_group_rule" "ssh" {
 resource "exoscale_compute_instance" "vm" {
   name               = "blakaj-vminfo"
   zone               = var.zone
-  template_id        = data.exoscale_compute_template.ubuntu.id
+  template_id        = data.exoscale_template.ubuntu.id
   type               = var.instance_type
   disk_size          = var.disk_size
   security_group_ids = [exoscale_security_group.web.id]
