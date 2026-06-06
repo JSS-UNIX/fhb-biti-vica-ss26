@@ -47,7 +47,7 @@ write_files:
       </head>
       <body>
           <h1>Server Dashboard</h1>
-          <p class="subtitle">Hello World - It worxxx!!</p>
+          <p class="subtitle">Hello World! Johannes is greeting you!</p>
           
           <h2>System Eckdaten</h2>
           <table>
