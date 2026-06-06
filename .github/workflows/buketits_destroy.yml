@@ -4,6 +4,9 @@ on: workflow_dispatch
 jobs:
   terraform-destroy:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./Buketits_David/Abgabe_2_Exoscale
     env:
         TF_VAR_exoscale_api_key: ${{ secrets.EXOSCALE_API_KEY }}
         TF_VAR_exoscale_api_secret: ${{ secrets.EXOSCALE_API_SECRET }}
