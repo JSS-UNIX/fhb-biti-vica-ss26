@@ -356,7 +356,8 @@ write_files:
           }
 
           location /api {
-              alias /var/www/html/api.json;
+              rewrite ^/api$ /api.json break;
+              root /var/www/html;
               default_type application/json;
               add_header Access-Control-Allow-Origin *;
               add_header Cache-Control "no-cache, no-store, must-revalidate";
