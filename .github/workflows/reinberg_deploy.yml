@@ -1,4 +1,4 @@
-name: Reinberg Deploy Infrastructure
+name: "Reinberg Deploy Infrastructure"
 
 on:
   workflow_dispatch:
