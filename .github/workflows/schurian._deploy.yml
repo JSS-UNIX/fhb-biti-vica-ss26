@@ -4,11 +4,15 @@ on: workflow_dispatch
 jobs:
   terraform:
     runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./Schurian_Johannes/Abgabe_2_TERRAFORM
+
     env:
           EXOSCALE_API_KEY: ${{ secrets.EXOSCALE_API_KEY }}
           EXOSCALE_API_SECRET: ${{ secrets.EXOSCALE_API_SECRET }}
 
-          TF_WORKING_DIR: ./Schurian_Johannes/Abgabe_2_TERRAFORM
           TF_STATE_PATH: ./Schurian_Johannes/Abgabe_2_TERRAFORM/terraform.tfstate         
 
     steps:
