@@ -1,5 +1,6 @@
 name: "Reinberg Destroy Infrastructure"
 on: workflow_dispatch
+
 jobs:
   terraform-destroy:
     runs-on: ubuntu-latest
@@ -12,6 +13,12 @@ jobs:
 
       - name: Terraform Init
         run: terraform init
+        env:
+          EXOSCALE_API_KEY: ${{ secrets.EXOSCALE_API_KEY }}
+          EXOSCALE_API_SECRET: ${{ secrets.EXOSCALE_API_SECRET }}
+
+      - name: Terraform Plan Destroy
+        run: terraform plan -destroy
         env:
           EXOSCALE_API_KEY: ${{ secrets.EXOSCALE_API_KEY }}
           EXOSCALE_API_SECRET: ${{ secrets.EXOSCALE_API_SECRET }}
