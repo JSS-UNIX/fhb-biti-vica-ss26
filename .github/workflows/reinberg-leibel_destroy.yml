@@ -5,14 +5,15 @@ jobs:
   terraform-destroy:
     runs-on: ubuntu-latest
 
+# Sagt GitHub Actions, dass alle folgenden 'run' Befehle in diesem Ordner starten sollen
+    defaults:
+      run:
+        working-directory: ./Reinberg-Leibel_Albert/Abgabe_2_260606
+
  env:
       # Securely pulled from the Secrets Vault
       TF_VAR_exoscale_api_key: ${{ secrets.EXOSCALE_API_KEY }}
       TF_VAR_exoscale_api_secret: ${{ secrets.EXOSCALE_API_SECRET }}
-
-      # Static path constants — update here if the folder structure changes
-      TF_WORKING_DIR: ./Reinberg-Leibel_Albert/Abgabe_2_260606
-      # TF_WORKFLOW_NAME: test.yml
       
       # Fix for the Node.js 20 deprecation warning
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
