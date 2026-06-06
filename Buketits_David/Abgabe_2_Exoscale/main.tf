@@ -14,7 +14,7 @@ provider "exoscale" {
 }
 
 locals {
-  zone       = "at-vie-1"                       
+  zone       = "at-vie-1"  # Zone in Wien, Österreich                 
   template   = "Linux Ubuntu 26.04 LTS 64-bit"  
 }
 
