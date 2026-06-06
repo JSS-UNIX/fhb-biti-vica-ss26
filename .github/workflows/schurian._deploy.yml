@@ -4,6 +4,15 @@ on: workflow_dispatch
 jobs:
   terraform:
     runs-on: ubuntu-latest
+    env:
+          EXOSCALE_API_KEY: ${{ secrets.EXOSCALE_API_KEY }}
+          EXOSCALE_API_SECRET: ${{ secrets.EXOSCALE_API_SECRET }}
+
+          TF_WORKING_DIR: ./Schurian_Johannes/Abgabe_2_TERRAFORM
+          TF_STATE_PATH: ./Schurian_Johannes/Abgabe_2_TERRAFORM/terraform.tfstate
+
+          TF_VAR_second_level_domain: ${{ vars.SECOND_LEVEL_DOMAIN || 'schurian' }}
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -13,19 +22,11 @@ jobs:
  
       - name: Terraform Init
         run: terraform init
-        env:
-          EXOSCALE_API_KEY: ${{ secrets.EXOSCALE_API_KEY }}
-          EXOSCALE_API_SECRET: ${{ secrets.EXOSCALE_API_SECRET }}
- 
+         
       - name: Terraform Plan
         run: terraform plan
-        env:
-          EXOSCALE_API_KEY: ${{ secrets.EXOSCALE_API_KEY }}
-          EXOSCALE_API_SECRET: ${{ secrets.EXOSCALE_API_SECRET }}
- 
+         
       - name: Terraform Apply
         # Füge -auto-approve hinzu, da in einer Pipeline niemand "yes" tippen kann
         run: terraform apply -auto-approve
-        env:
-          EXOSCALE_API_KEY: ${{ secrets.EXOSCALE_API_KEY }}
-          EXOSCALE_API_SECRET: ${{ secrets.EXOSCALE_API_SECRET }}
+      
