@@ -1,104 +1,70 @@
-# ============================================================
-# main.tf – Exoscale Infrastruktur für die VM-Info Webseite
-# Erstellt eine Ubuntu VM mit HTTP-Endpunkt via CloudInit
-# ============================================================
-
 terraform {
   required_providers {
     exoscale = {
-      # Offizieller Exoscale Terraform Provider
       source  = "exoscale/exoscale"
-      version = "~> 0.62"
+      version = "0.69.2"
     }
   }
 }
-
-# Provider-Konfiguration: Credentials kommen aus Umgebungsvariablen
-# EXOSCALE_API_KEY und EXOSCALE_API_SECRET (werden via GitHub Secrets gesetzt)
-provider "exoscale" {}
-
-# ============================================================
-# Security Group: Firewall-Regeln für die VM
-# ============================================================
-resource "exoscale_security_group" "vm_info_sg" {
-  name        = "vm-info-sg"
-  description = "Security Group fuer die VM-Info Webseite"
+ 
+# Provider Konfiguration bleibt leer.
+# Terraform nutzt stattdessen automatisch die Umgebungsvariablen 
+# EXOSCALE_API_KEY und EXOSCALE_API_SECRET (z.B. aus GitHub Actions).
+provider "exoscale" {
 }
-
-# Regel: SSH-Zugang (Port 22) von überall erlaubt
-resource "exoscale_security_group_rule" "ssh" {
-  security_group_id = exoscale_security_group.vm_info_sg.id
-  type              = "INGRESS"
-  protocol          = "TCP"
-  cidr              = "0.0.0.0/0"
-  start_port        = 22
-  end_port          = 22
+ 
+locals {
+  zone       = "ch-gva-2"                       
+  template   = "Linux Ubuntu 26.04 LTS 64-bit"  
 }
-
-# Regel: HTTP-Zugang (Port 80) von überall erlaubt
+ 
+# 1. Das aktuellste Ubuntu-Template in der gewählten Zone suchen
+data "exoscale_compute_template" "ubuntu" {
+  zone = local.zone
+  name = local.template
+}
+ 
+# 2. Security Group (Firewall) erstellen
+# Hinweis: SSH (Port 22) ist absichtlich nicht konfiguriert für maximale Sicherheit.
+resource "exoscale_security_group" "web" {
+  name        = "web-server-sg"
+  description = "Erlaubt reinen Web-Traffic (HTTP und HTTPS)"
+}
+ 
+# 2.1 HTTP erlauben (Port 80)
 resource "exoscale_security_group_rule" "http" {
-  security_group_id = exoscale_security_group.vm_info_sg.id
+  security_group_id = exoscale_security_group.web.id
   type              = "INGRESS"
   protocol          = "TCP"
   cidr              = "0.0.0.0/0"
   start_port        = 80
   end_port          = 80
 }
-
-# Regel: ICMP (Ping) erlaubt für Debugging
-resource "exoscale_security_group_rule" "icmp" {
-  security_group_id = exoscale_security_group.vm_info_sg.id
+ 
+# 2.2 HTTPS erlauben (Port 443)
+resource "exoscale_security_group_rule" "https" {
+  security_group_id = exoscale_security_group.web.id
   type              = "INGRESS"
-  protocol          = "ICMP"
+  protocol          = "TCP"
   cidr              = "0.0.0.0/0"
-  icmp_type         = 8  # Echo Request
-  icmp_code         = 0
+  start_port        = 443
+  end_port          = 443
 }
-
-# ============================================================
-# CloudInit User-Data: Konfiguriert das OS automatisch
-# Die template_file liest cloud-init.yaml und übergibt Variablen
-# ============================================================
-data "template_file" "cloud_init" {
-  template = file("${path.module}/cloud-init.yaml")
+ 
+# 3. Die virtuelle Maschine (Compute Instance) erstellen
+resource "exoscale_compute_instance" "web_server" {
+  zone               = local.zone
+  name               = "nginx-dashboard-server"
+  template_id        = data.exoscale_compute_template.ubuntu.id
+  type               = "standard.micro" 
+  disk_size          = 10               
+  security_group_ids = [exoscale_security_group.web.id]
+  # Hier wird unser Bash-Skript eingelesen und an die VM übergeben
+  user_data = file("${path.module}/cloud-init.sh")
 }
-
-# ============================================================
-# Compute Instance: Die eigentliche VM auf Exoscale
-# ============================================================
-resource "exoscale_compute_instance" "vm_info" {
-  # Anzeigename der VM in der Exoscale Console
-  name = "vm-info-server"
-
-  # Ubuntu 24.04 LTS (Noble Numbat) – unterstütztes Ubuntu
-  template_id = data.exoscale_template.ubuntu.id
-
-  # Instance-Typ: small für Demo-Zwecke (2 vCPU, 2 GB RAM)
-  type = "standard.small"
-
-  # Disk-Größe in GB
-  disk_size = 20
-
-  # Zone: at-vie-1 (Wien, Österreich)
-  zone = var.zone
-
-  # Firewall-Regeln anwenden
-  security_group_ids = [exoscale_security_group.vm_info_sg.id]
-
-  # CloudInit Script wird beim ersten Boot ausgeführt
-  user_data = data.template_file.cloud_init.rendered
-
-  # Lifecycle-Hook: Verhindert Neuerstellen bei kleinen Änderungen
-  lifecycle {
-    create_before_destroy = true
-  }
-}
-
-# ============================================================
-# Template Lookup: Sucht das aktuelle Ubuntu 24.04 LTS Image
-# ============================================================
-data "exoscale_template" "ubuntu" {
-  zone   = var.zone
-  # Sucht nach dem neuesten offiziellen Ubuntu 24.04 Template
-  name   = "Linux Ubuntu 24.04 (Noble Numbat) 64-bit"
+ 
+# 4. Ausgabe der öffentlichen IP-Adresse nach dem Deployment
+output "server_ip" {
+  value       = exoscale_compute_instance.web_server.public_ip_address
+  description = "Die oeffentliche IP-Adresse des Webservers"
 }
