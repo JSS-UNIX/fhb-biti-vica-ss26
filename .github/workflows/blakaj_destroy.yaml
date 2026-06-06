@@ -12,6 +12,9 @@ jobs:
   destroy:
     runs-on: ubuntu-latest
     if: github.event.inputs.confirm == 'destroy'
+    permissions:
+      contents: read
+      actions: write
 
     steps:
       - name: Checkout
@@ -23,10 +26,12 @@ jobs:
           tofu_version: "1.8.0"
 
       - name: Download Terraform state
-        uses: dawidd6/action-download-artifact@v6
+        uses: actions/download-artifact@v4
         with:
           name: tfstate
           path: Edison_Blakaj/Abgabe_2_260517/terraform/
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
 
       - name: Init
         working-directory: Edison_Blakaj/Abgabe_2_260517/terraform
@@ -41,3 +46,20 @@ jobs:
           EXOSCALE_API_KEY:    ${{ secrets.EXOSCALE_API_KEY }}
           EXOSCALE_API_SECRET: ${{ secrets.EXOSCALE_API_SECRET }}
         run: tofu destroy -auto-approve
+
+      - name: Delete Terraform state artifact
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const artifacts = await github.rest.actions.listArtifactsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: 'tfstate'
+            });
+            for (const artifact of artifacts.data.artifacts) {
+              await github.rest.actions.deleteArtifact({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                artifact_id: artifact.id
+              });
+            }
