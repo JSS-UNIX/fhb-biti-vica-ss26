@@ -1,5 +1,6 @@
 name: "Destroy Infrastructure - Schurian"
-
+permissions:
+  contents: write
 on: workflow_dispatch
 jobs:
   terraform:
@@ -13,7 +14,7 @@ jobs:
           EXOSCALE_API_KEY: ${{ secrets.EXOSCALE_API_KEY }}
           EXOSCALE_API_SECRET: ${{ secrets.EXOSCALE_API_SECRET }}
 
-          TF_STATE_PATH: ./Schurian_Johannes/Abgabe_2_TERRAFORM/terraform.tfstate
+          #TF_STATE_PATH: ./Schurian_Johannes/Abgabe_2_TERRAFORM/terraform.tfstate
     
     steps:
       - name: Checkout Code
@@ -30,3 +31,14 @@ jobs:
                 
       - name: Terraform Destroy
         run: terraform destroy -auto-approve
+
+        name: Commit Terraform state
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          git status
+          git add terraform.tfstate terraform.tfstate.backup || true
+          
+          git commit -m "Update Terraform state" || echo "No state changes to commit"
+          git push
