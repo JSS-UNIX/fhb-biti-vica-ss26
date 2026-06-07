@@ -9,7 +9,7 @@ terraform {
 }
 
 # Verbindung zu Exoscale
-# Die Zugangsdaten werden später im GitHub Workflow über GitHub Secrets gesetzt
+# Die Zugangsdaten werden im GitHub Workflow über GitHub Secrets gesetzt
 provider "exoscale" {
   key    = var.exoscale_key
   secret = var.exoscale_secret
@@ -62,11 +62,17 @@ resource "exoscale_compute_instance" "vm" {
   # Größe der Systemdisk
   disk_size = 10
 
-# Zuweisung der Security Group
-security_group_ids = [
-  exoscale_security_group.web.id
-]
+  # Zuweisung der Security Group
+  security_group_ids = [
+    exoscale_security_group.web.id
+  ]
 
   # CloudInit führt die komplette Betriebssystemkonfiguration automatisch aus
   user_data = file("${path.module}/cloud-init.yaml")
+
+  # VM erst erstellen, nachdem die Firewall Regeln vorhanden sind
+  depends_on = [
+    exoscale_security_group_rule.http,
+    exoscale_security_group_rule.ssh
+  ]
 }
