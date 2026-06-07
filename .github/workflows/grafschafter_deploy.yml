@@ -50,6 +50,7 @@ jobs:
             -var="exoscale_api_secret=${{ secrets.EXOSCALE_API_SECRET }}" \
             -var="zone=${{ github.event.inputs.zone || 'at-vie-2' }}" \
             -var="instance_type=${{ github.event.inputs.instance_type || 'standard.small' }}" \
+            -var="ssh_public_key=${{ secrets.SSH_PUBLIC_KEY }}" \
             -out=tfplan
 
       - name: Terraform Apply

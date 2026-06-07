@@ -43,6 +43,7 @@ jobs:
           tofu destroy -auto-approve \
             -var="exoscale_api_key=${{ secrets.EXOSCALE_API_KEY }}" \
             -var="exoscale_api_secret=${{ secrets.EXOSCALE_API_SECRET }}"
+            -var="ssh_public_key=${{ secrets.SSH_PUBLIC_KEY }}" \
         env:
           EXOSCALE_API_KEY:    ${{ secrets.EXOSCALE_API_KEY }}
           EXOSCALE_API_SECRET: ${{ secrets.EXOSCALE_API_SECRET }}

@@ -46,3 +46,8 @@ variable "disk_size" {
   description = "Root-Disk-Größe in GB"
   default     = 20
 }
+
+variable "ssh_public_key" {
+  type        = string
+  description = "SSH Public Key für VM-Zugriff"
+}

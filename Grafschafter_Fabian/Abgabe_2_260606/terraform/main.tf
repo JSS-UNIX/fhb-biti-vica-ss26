@@ -11,7 +11,10 @@ data "exoscale_security_group" "default" {
   name = "default"
 }
 
-# ---- Security Group ----
+resource "exoscale_ssh_key" "deployer" {
+  name       = "grafschafter-deployer"
+  public_key = var.ssh_public_key
+}
 
 # Eigene Security Group: nur HTTP, HTTPS und SSH erlaubt
 resource "exoscale_security_group" "web" {
@@ -73,6 +76,7 @@ resource "exoscale_compute_instance" "vm" {
   template_id = data.exoscale_template.ubuntu.id
   type        = var.instance_type
   disk_size   = var.disk_size
+  ssh_key = exoscale_ssh_key.deployer.name
 
   # Cloud-Init user_data: vollständige OS-Konfiguration
   user_data = local.cloud_init
