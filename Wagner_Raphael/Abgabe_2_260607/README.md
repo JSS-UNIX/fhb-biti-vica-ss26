@@ -19,7 +19,11 @@ und Caddy stellt automatisch HTTPS mit Let's Encrypt bereit.
 
 ## Voraussetzungen
 
-In GitHub Actions muessen folgende Secrets gesetzt sein:
+Die Secrets werden nicht im fremden Kursrepository gesetzt, sondern in dem
+Repository, in dem der Workflow ausgefuehrt wird. Praktisch ist das der eigene
+Fork des Kursrepos. Der Pull Request liefert nur den Code zur Abgabe.
+
+In GitHub Actions muessen dort folgende Secrets gesetzt sein:
 
 | Secret | Zweck |
 | --- | --- |
@@ -38,7 +42,7 @@ Wenn die Variable nicht gesetzt ist, verwendet der Workflow den Bucket
 
 ## Infrastruktur erstellen
 
-1. Im GitHub-Repository den Reiter **Actions** oeffnen.
+1. Im eigenen Fork den Reiter **Actions** oeffnen.
 2. Workflow **Wagner Raphael Abgabe 2 - Infrastruktur erstellen** auswaehlen.
 3. Optional `dns_zone` und `dns_record_name` ausfuellen.
 4. **Run workflow** starten.
@@ -49,7 +53,7 @@ Caddy und die App antworten.
 
 ## Infrastruktur loeschen
 
-1. Im Reiter **Actions** den Workflow
+1. Im eigenen Fork im Reiter **Actions** den Workflow
    **Wagner Raphael Abgabe 2 - Infrastruktur loeschen** auswaehlen.
 2. **Run workflow** starten.
 3. Der Workflow verwendet denselben Remote-State und entfernt die Ressourcen.

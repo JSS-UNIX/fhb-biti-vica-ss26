@@ -52,8 +52,9 @@ Dadurch kollidiert diese Abgabe nicht mit anderen Abgaben im selben Repository.
 
 ## Bedienung fuer die Bewertung
 
-1. In GitHub Actions die Secrets `EXOSCALE_API_KEY` und `EXOSCALE_API_SECRET`
-   setzen.
+1. Im eigenen Fork des Kursrepositories die Secrets `EXOSCALE_API_KEY` und
+   `EXOSCALE_API_SECRET` fuer GitHub Actions setzen. Im fremden Kursrepository
+   selbst sind diese Secrets fuer Studierende nicht konfigurierbar.
 2. Den Workflow **Wagner Raphael Abgabe 2 - Infrastruktur erstellen** starten.
 3. Optional eine Exoscale-DNS-Zone angeben:
    - `dns_zone`, zum Beispiel `example.at`
@@ -62,6 +63,10 @@ Dadurch kollidiert diese Abgabe nicht mit anderen Abgaben im selben Repository.
 5. Die HTML-Ansicht unter `/` pruefen.
 6. Die JSON-API unter `/api/v1/system` pruefen.
 7. Nach der Bewertung den Destroy-Workflow starten.
+
+Der Pull Request in das Kursrepository enthaelt den gesamten Code und die
+Workflow-Dateien. Ausgefuehrt werden die Workflows mit den eigenen Secrets im
+Fork oder nach dem Merge durch eine Person mit Zugriff auf das Zielrepository.
 
 ## Wichtige Terraform-Variablen
 
