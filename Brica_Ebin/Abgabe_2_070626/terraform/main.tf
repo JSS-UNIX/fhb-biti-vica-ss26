@@ -40,6 +40,7 @@ resource "exoscale_security_group_rule" "ssh" {
   end_port          = 22
 }
 
+# Ubuntu Template anhand des Namens und der Zone suchen
 data "exoscale_template" "ubuntu" {
   zone = "at-vie-1"
   name = "Linux Ubuntu 24.04 LTS 64-bit"
@@ -62,9 +63,7 @@ resource "exoscale_compute_instance" "vm" {
   disk_size = 10
 
   # Zuweisung der Security Group
-  security_group_ids = [
-    exoscale_security_group.web.id
-  ]
+  security_group_id = exoscale_security_group.web.id
 
   # CloudInit führt die komplette Betriebssystemkonfiguration automatisch aus
   user_data = file("${path.module}/cloud-init.yaml")
