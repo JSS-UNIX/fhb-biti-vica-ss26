@@ -1,4 +1,4 @@
-# Terraform-Einstellungen und Provider-Definition
+# Terraform-Einstellungen
 terraform {
   required_providers {
     exoscale = {
@@ -8,21 +8,23 @@ terraform {
   }
 }
 
-# Verbindung zu Exoscale mit den Zugangsdaten herstellen
-provider "exoscale" {
-  key    = var.exoscale_key
-  secret = var.exoscale_secret
+# Provider liest Credentials aus Umgebungsvariablen
+provider "exoscale" {}
+
+# Ubuntu Template suchen
+data "exoscale_template" "ubuntu" {
+  zone = var.zone
+  name = var.instance_template
 }
 
-# Security Group (Firewall) anlegen
-resource "exoscale_security_group" "web_sg" {
-  name        = "pmen753-web-sg"
-  description = "Erlaubt eingehenden HTTP-Verkehr auf Port 80"
+# Security Group erstellen (Firewall)
+resource "exoscale_security_group" "sg" {
+  name = "${var.instance_name}-sg"
 }
 
-# Regel: Erlaube HTTP (Port 80) von ueberall
-resource "exoscale_security_group_rule" "http_rule" {
-  security_group_id = exoscale_security_group.web_sg.id
+# Port 80 oeffnen (HTTP)
+resource "exoscale_security_group_rule" "http" {
+  security_group_id = exoscale_security_group.sg.id
   type              = "INGRESS"
   protocol          = "TCP"
   cidr              = "0.0.0.0/0"
@@ -30,26 +32,44 @@ resource "exoscale_security_group_rule" "http_rule" {
   end_port          = 80
 }
 
-# Automatische Suche nach dem aktuellen Ubuntu Template
-data "exoscale_template" "ubuntu" {
-  zone = "at-vie-1"
-  name = "Linux Ubuntu 24.04 LTS 64-bit"
+# Port 443 oeffnen (HTTPS)
+resource "exoscale_security_group_rule" "https" {
+  security_group_id = exoscale_security_group.sg.id
+  type              = "INGRESS"
+  protocol          = "TCP"
+  cidr              = "0.0.0.0/0"
+  start_port        = 443
+  end_port          = 443
 }
 
-# Erstellen der VM
-resource "exoscale_compute_instance" "sysinfo_vm" {
-  zone        = "at-vie-1"
-  name        = "pmen753-sysinfo-vm"
-  type        = "standard.micro"
-  disk_size   = 10
+# Port 22 oeffnen (SSH)
+resource "exoscale_security_group_rule" "ssh" {
+  security_group_id = exoscale_security_group.sg.id
+  type              = "INGRESS"
+  protocol          = "TCP"
+  cidr              = "0.0.0.0/0"
+  start_port        = 22
+  end_port          = 22
+}
+
+# VM erstellen
+resource "exoscale_compute_instance" "vm" {
+  zone        = var.zone
+  name        = var.instance_name
   template_id = data.exoscale_template.ubuntu.id
+  type        = var.instance_type
+  disk_size   = 20
 
-  security_group_ids = [exoscale_security_group.web_sg.id]
+  security_group_ids = [
+    exoscale_security_group.sg.id
+  ]
 
+  # Cloud-Init wird beim ersten Boot ausgefuehrt
   user_data = file("${path.module}/cloud-init.yaml")
 }
 
+# URL der fertigen VM ausgeben
 output "vm_url" {
-  value       = "http://${exoscale_compute_instance.sysinfo_vm.public_ip_address}"
-  description = "Die fertige URL zum HTTP-Endpunkt mit den Systemdetails"
+  value       = "http://${exoscale_compute_instance.vm.public_ip_address}"
+  description = "URL zum HTTP-Endpunkt mit den Systemdetails"
 }
