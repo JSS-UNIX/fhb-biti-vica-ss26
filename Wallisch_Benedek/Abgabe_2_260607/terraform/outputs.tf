@@ -7,10 +7,10 @@ output "instance_ip" {
 
 output "website_url" {
   description = "HTTP URL zur HTML-Webseite"
-  value       = "http://${exoscale_compute_instance.vm.public_ip_address}:8080/"
+  value       = "http://${exoscale_compute_instance.vm.public_ip_address}/"
 }
 
 output "api_url" {
   description = "HTTP URL zum JSON API Endpunkt"
-  value       = "http://${exoscale_compute_instance.vm.public_ip_address}:8080/api/v1/system"
+  value       = "http://${exoscale_compute_instance.vm.public_ip_address}/api/v1/system.json"
 }
