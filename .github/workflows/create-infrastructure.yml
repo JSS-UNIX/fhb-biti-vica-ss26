@@ -1,81 +1,43 @@
-# Workflow zum Erstellen bzw. Aktualisieren der Exoscale Infrastruktur.
 name: Create Exoscale Infrastructure
 
 on:
-  # Manueller Start in GitHub Actions.
   workflow_dispatch:
     inputs:
+      ssh_key:
+        description: "Name des vorhandenen Exoscale SSH Keys"
+        required: true
       zone:
         description: "Exoscale Zone"
         required: true
         default: "at-vie-1"
-      dns_domain:
-        description: "Optional: Exoscale DNS Zone, z.B. example.com"
-        required: false
-        default: ""
-      dns_record_name:
-        description: "Optional: DNS Record Name"
-        required: false
-        default: "vm-details"
-      letsencrypt_email:
-        description: "Optional: E-Mail für Let's Encrypt"
-        required: false
-        default: "admin@example.com"
 
 jobs:
-  apply:
-    name: OpenTofu Apply
+  create:
     runs-on: ubuntu-latest
 
     defaults:
       run:
-        # Alle tofu Befehle laufen im Abgabe-Unterordner.
-        working-directory: Abgabe_2_2026/terraform
-
-    env:
-      # Secrets werden als Terraform Variablen bereitgestellt.
-      TF_VAR_exoscale_api_key: ${{ secrets.EXOSCALE_API_KEY }}
-      TF_VAR_exoscale_api_secret: ${{ secrets.EXOSCALE_API_SECRET }}
-      AWS_ACCESS_KEY_ID: ${{ secrets.TF_STATE_ACCESS_KEY }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.TF_STATE_SECRET_KEY }}
-
-      # Workflow Inputs werden ebenfalls als Terraform Variablen übergeben.
-      TF_VAR_zone: ${{ inputs.zone }}
-      TF_VAR_dns_domain: ${{ inputs.dns_domain }}
-      TF_VAR_dns_record_name: ${{ inputs.dns_record_name }}
-      TF_VAR_letsencrypt_email: ${{ inputs.letsencrypt_email }}
+        working-directory: Abgabe_2_eda_konakci/terraform
 
     steps:
-      # Repository auschecken, damit OpenTofu die Konfiguration lesen kann.
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # OpenTofu CLI installieren.
       - name: Setup OpenTofu
         uses: opentofu/setup-opentofu@v1
         with:
-          tofu_wrapper: false
+          tofu_version: "1.8.0"
 
-      # Provider herunterladen und Arbeitsverzeichnis initialisieren.
       - name: OpenTofu init
-        run: tofu init -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" -backend-config="key=vica/terraform.tfstate" -backend-config="region=at-vie-1" -backend-config="endpoint=${{ secrets.TF_STATE_ENDPOINT }}" -backend-config="skip_credentials_validation=true" -backend-config="skip_metadata_api_check=true" -backend-config="skip_region_validation=true" -backend-config="use_path_style=true"
-     
-     # Format prüfen, damit Codequalität im Workflow sichtbar ist.
-      - name: OpenTofu format check
-        run: tofu fmt -recursive
+        run: tofu init
 
-      # Konfiguration validieren, bevor Ressourcen erstellt werden.
-      - name: OpenTofu validate
-        run: tofu validate
-
-      # Plan ausgeben, damit Änderungen im Workflow nachvollziehbar sind.
-      - name: OpenTofu plan
-        run: tofu plan -out=tfplan
-
-      # Infrastruktur erstellen bzw. aktualisieren.
       - name: OpenTofu apply
-        run: tofu apply -auto-approve tfplan
+        run: |
+          tofu apply -auto-approve \
+            -var="exoscale_api_key=${{ secrets.EXOSCALE_API_KEY }}" \
+            -var="exoscale_api_secret=${{ secrets.EXOSCALE_API_SECRET }}" \
+            -var="ssh_key=${{ github.event.inputs.ssh_key }}" \
+            -var="zone=${{ github.event.inputs.zone }}"
 
-      # Wichtige URLs ausgeben, damit die Bewertung direkt testen kann.
-      - name: Show outputs
+      - name: Show OpenTofu outputs
         run: tofu output
