@@ -2,7 +2,7 @@
 # Die VM wird per CloudInit automatisch als Webserver/API konfiguriert.
 
 locals {
-  name = "wallisch-benedek-abgabe2"
+  name = "wallisch-benedek-abgabe2-v2"
   zone = "at-vie-1"
 }
 
