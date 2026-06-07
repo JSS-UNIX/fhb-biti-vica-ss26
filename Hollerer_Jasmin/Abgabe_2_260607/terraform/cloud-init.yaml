@@ -310,7 +310,7 @@ write_files:
 
           <!-- Host -->
           <div class="card">
-            <h2>⚙️ Host &amp; Betriebssystem</h2>
+            <h2> Host &amp; Betriebssystem</h2>
             <div class="info-row"><span class="info-label">Hostname</span><span class="info-value">${HOSTNAME}</span></div>
             <div class="info-row"><span class="info-label">OS</span><span class="info-value">${OS}</span></div>
             <div class="info-row"><span class="info-label">Kernel</span><span class="info-value">${KERNEL}</span></div>
@@ -322,7 +322,7 @@ write_files:
 
           <!-- Netzwerk -->
           <div class="card">
-            <h2>🌐 Netzwerk</h2>
+            <h2> Netzwerk</h2>
             <div class="info-row"><span class="info-label">Öffentliche IP</span><span class="info-value">${IP_PUBLIC}</span></div>
             <div class="info-row"><span class="info-label">Private IP</span><span class="info-value">${IP_PRIVATE}</span></div>
             <div class="info-row" style="flex-direction:column; align-items:flex-start; gap:0.3rem;">
@@ -333,7 +333,7 @@ write_files:
 
           <!-- CPU -->
           <div class="card">
-            <h2>🔲 CPU</h2>
+            <h2> CPU</h2>
             <div class="info-row"><span class="info-label">Modell</span><span class="info-value">${CPU_MODEL}</span></div>
             <div class="info-row"><span class="info-label">Kerne</span><span class="info-value">${CPU_CORES}</span></div>
             <div class="info-row"><span class="info-label">Load Average</span><span class="info-value">${CPU_LOAD}</span></div>
@@ -341,7 +341,7 @@ write_files:
 
           <!-- RAM -->
           <div class="card">
-            <h2>💾 Arbeitsspeicher</h2>
+            <h2> Arbeitsspeicher</h2>
             <div class="info-row"><span class="info-label">Gesamt</span><span class="info-value">${MEM_TOTAL} MB</span></div>
             <div class="info-row"><span class="info-label">Genutzt</span><span class="info-value">${MEM_USED} MB</span></div>
             <div class="info-row"><span class="info-label">Frei</span><span class="info-value">${MEM_FREE} MB</span></div>
@@ -352,7 +352,7 @@ write_files:
 
           <!-- Prozesse -->
           <div class="card">
-            <h2>⚡ Prozesse</h2>
+            <h2> Prozesse</h2>
             <div class="info-row"><span class="info-label">Laufende Prozesse</span><span class="info-value">${PROC_COUNT}</span></div>
           </div>
 
@@ -361,7 +361,7 @@ write_files:
         <!-- Dateisysteme -->
         <div style="max-width:1200px; margin: 1.5rem auto 0;">
           <div class="card">
-            <h2>💿 Dateisysteme &amp; Storage</h2>
+            <h2> Dateisysteme &amp; Storage</h2>
             <table>
               <thead>
                 <tr>
