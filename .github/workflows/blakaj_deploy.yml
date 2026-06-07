@@ -1,24 +1,11 @@
-name: Deploy Infrastructure
+name: "Deploy Infrastructure"
 
 on:
   workflow_dispatch:
-    inputs:
-      zone:
-        description: "Exoscale zone"
-        required: false
-        default: "at-vie-1"
-      instance_type:
-        description: "Instance type"
-        required: false
-        default: "standard.micro"
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      actions: write
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,15 +15,6 @@ jobs:
         with:
           tofu_version: "1.8.0"
 
-      - name: Download existing Terraform state
-        uses: actions/download-artifact@v4
-        continue-on-error: true
-        with:
-          name: tfstate
-          path: Edison_Blakaj/Abgabe_2_260517/terraform/
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          repository: ${{ github.repository }}
-
       - name: Init
         working-directory: Edison_Blakaj/Abgabe_2_260517/terraform
         env:
@@ -44,23 +22,15 @@ jobs:
           EXOSCALE_API_SECRET: ${{ secrets.EXOSCALE_API_SECRET }}
         run: tofu init
 
-      - name: Plan
-        working-directory: Edison_Blakaj/Abgabe_2_260517/terraform
-        env:
-          EXOSCALE_API_KEY:    ${{ secrets.EXOSCALE_API_KEY }}
-          EXOSCALE_API_SECRET: ${{ secrets.EXOSCALE_API_SECRET }}
-        run: |
-          tofu plan \
-            -var="zone=${{ github.event.inputs.zone }}" \
-            -var="instance_type=${{ github.event.inputs.instance_type }}" \
-            -out=tfplan
-
       - name: Apply
         working-directory: Edison_Blakaj/Abgabe_2_260517/terraform
         env:
           EXOSCALE_API_KEY:    ${{ secrets.EXOSCALE_API_KEY }}
           EXOSCALE_API_SECRET: ${{ secrets.EXOSCALE_API_SECRET }}
-        run: tofu apply -auto-approve tfplan
+        run: |
+          tofu apply -auto-approve \
+            -var="zone=at-vie-1" \
+            -var="instance_type=standard.micro"
 
       - name: Show outputs
         working-directory: Edison_Blakaj/Abgabe_2_260517/terraform
@@ -68,12 +38,3 @@ jobs:
           EXOSCALE_API_KEY:    ${{ secrets.EXOSCALE_API_KEY }}
           EXOSCALE_API_SECRET: ${{ secrets.EXOSCALE_API_SECRET }}
         run: tofu output
-
-      - name: Upload Terraform state
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: tfstate
-          path: Edison_Blakaj/Abgabe_2_260517/terraform/terraform.tfstate
-          overwrite: true
-          retention-days: 90
