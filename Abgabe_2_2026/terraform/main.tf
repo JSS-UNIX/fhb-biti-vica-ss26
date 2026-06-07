@@ -43,7 +43,7 @@ locals {
 
   # cloud-init Template mit eingesetzten Werten rendern
   cloud_init_rendered = templatefile("${path.module}/cloud-init.yaml.tftpl", {
-    domain_name = local.fqdn
+    fqdn = local.fqdn
   })
 }
 
