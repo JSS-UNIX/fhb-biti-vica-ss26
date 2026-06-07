@@ -1,4 +1,4 @@
-#cloud-config
+#cloud-init-config
 package_update: true
 package_upgrade: true
 packages:
@@ -9,6 +9,7 @@ packages:
   - debian-keyring
   - debian-archive-keyring
   - apt-transport-https
+  - openssl
 
 write_files:
 
@@ -155,16 +156,18 @@ write_files:
       * * * * * root /usr/local/bin/generate-sysinfo.sh > /dev/null 2>&1
 
 runcmd:
-  # Caddy Repository hinzufuegen
+  # Caddy Repository hinzufuegen und installieren
   - curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
   - curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list
   - apt-get update
-  # Caddy installieren - kein Konflikt weil Caddyfile noch nicht existiert
   - apt-get install -y caddy
-  # NACH der Installation die Caddyfile mit unserer Config ueberschreiben
-  - cp /etc/caddy/Caddyfile /etc/caddy/Caddyfile.bak
+  # Self-signed Zertifikat erstellen
+  - mkdir -p /etc/caddy/certs
+  - openssl req -x509 -newkey rsa:2048 -keyout /etc/caddy/certs/caddy.key -out /etc/caddy/certs/caddy.crt -days 365 -nodes -subj '/CN=sysinfo'
+  - chown -R caddy:caddy /etc/caddy/certs
+  # Caddyfile NACH der Installation ueberschreiben (vermeidet dpkg-Konflikt)
   - echo ':443 {' > /etc/caddy/Caddyfile
-  - echo '  tls internal' >> /etc/caddy/Caddyfile
+  - echo '  tls /etc/caddy/certs/caddy.crt /etc/caddy/certs/caddy.key' >> /etc/caddy/Caddyfile
   - echo '  reverse_proxy localhost:8080' >> /etc/caddy/Caddyfile
   - echo '}' >> /etc/caddy/Caddyfile
   - echo ':80 {' >> /etc/caddy/Caddyfile
@@ -176,6 +179,6 @@ runcmd:
   - systemctl daemon-reload
   - systemctl enable sysinfo-web.service
   - systemctl start sysinfo-web.service
-  # Caddy mit unserer Config starten
+  # Caddy mit HTTPS starten
   - systemctl enable caddy
   - systemctl restart caddy
