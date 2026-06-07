@@ -1,4 +1,4 @@
-name: "pmen753 - 1. Exoscale Infrastruktur Erstellen"
+name: "pmen753 - deployen"
 on:
   workflow_dispatch:
 
