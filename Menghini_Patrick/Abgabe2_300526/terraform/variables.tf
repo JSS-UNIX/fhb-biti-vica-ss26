@@ -5,12 +5,12 @@ variable "zone" {
 
 variable "instance_template" {
   type    = string
-  default = "Linux Ubuntu 24.04 LTS 64-bit"
+  default = "Linux Ubuntu 26.04 LTS 64-bit"
 }
 
 variable "instance_name" {
   type    = string
-  default = "pmen753-sysinfo-vm"
+  default = "pmen-vm"
 }
 
 variable "instance_type" {
