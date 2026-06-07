@@ -69,5 +69,5 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-server = HTTPServer(("0.0.0.0", 80), Handler)
+server = HTTPServer(("0.0.0.0", 8080), Handler)
 server.serve_forever()
