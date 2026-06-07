@@ -23,7 +23,7 @@ variable "zone" {
 variable "instance_name" {
   description = "Name der Exoscale Compute Instance"
   type        = string
-  default     = "vica-vm-details"
+  default     = "vica-vm-details-ek"
 }
 
 # Offizielles Ubuntu Template. Ubuntu 22.04 LTS ist aktuell unterstützt und stabil.
