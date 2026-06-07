@@ -1,0 +1,86 @@
+name: "1. Exoscale Infrastruktur Erstellen"
+# Definiert, wann der Workflow startet
+on:
+  workflow_dispatch: # Ermöglicht das manuelle Starten per Knopfdruck im GitHub-UI
+
+permissions: # erlaubt dem Github Bot Dateien in das Repo zu pushen - benötigt um beim Löschen alle nötigen State-Infos parat zu haben
+  contents: write
+
+jobs:
+  terraform-deploy:
+    name: "Terraform Apply"
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Den Code aus dem GitHub-Repository auf den Runner herunterladen
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 2. Terraform auf dem GitHub-Runner installieren
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false # Wichtig für saubere Log-Ausgaben
+
+      # 3. Terraform initialisieren (lädt den Exoscale-Provider herunter)
+      - name: Terraform Init
+        run: terraform init -reconfigure
+        working-directory: ./terraform
+
+      # 4. Den Bauplan prüfen (zeigt was gebaut wird)
+      - name: Terraform Plan
+        run: terraform plan
+        working-directory: ./terraform
+        env:
+          TF_VAR_exoscale_key: ${{ secrets.EXOSCALE_KEY }}
+          TF_VAR_exoscale_secret: ${{ secrets.EXOSCALE_SECRET }}
+
+      # 5. Die Infrastruktur tatsächlich bauen in Exoscale
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
+        working-directory: ./terraform
+        env:
+          TF_VAR_exoscale_key: ${{ secrets.EXOSCALE_KEY }}
+          TF_VAR_exoscale_secret: ${{ secrets.EXOSCALE_SECRET }}
+
+      # 6. URL aus Terraform Output auslesen und anzeigen
+      - name: Show VM URL
+        run: |
+          echo "============================================"
+          echo "  Deployment erfolgreich!"
+          echo "============================================"
+          echo ""
+          echo "VM URL: $(terraform output -raw vm_url)"
+          echo ""
+          echo "Hinweis: Cloud-Init braucht ca. 2-3 Minuten."
+        working-directory: ./terraform
+
+      # 7. State absichern (terraform.tfstate) um die VM-Infos für den Löschprozess zu sichern
+      - name: Commit & Push Terraform State
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add ./terraform/terraform.tfstate
+          git commit -m "State-Update: VM erfolgreich erstellt [skip ci]" || echo "Keine Änderungen am State"
+          git push
+
+      # 8. Warten und prüfen ob der Endpunkt erreichbar ist
+      - name: Endpunkt testen
+        working-directory: ./terraform
+        run: |
+          URL=$(terraform output -raw vm_url)
+          echo "Warte 120 Sekunden auf Cloud-Init..."
+          sleep 120
+
+          for i in $(seq 1 10); do
+            echo "Versuch $i/10: Teste $URL ..."
+            if curl -s --max-time 10 "$URL" | grep -q "Technische Details"; then
+              echo "Endpunkt ist erreichbar!"
+              exit 0
+            fi
+            echo "Noch nicht bereit, warte 20 Sekunden..."
+            sleep 20
+          done
+          echo "WARNUNG: Endpunkt nach 10 Versuchen nicht erreichbar."
+          echo "Cloud-Init läuft möglicherweise noch."
+          exit 0
