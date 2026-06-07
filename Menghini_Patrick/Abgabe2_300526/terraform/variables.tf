@@ -1,13 +1,19 @@
-# Platzhalter fuer den Exoscale API-Key
-variable "exoscale_key" {
-  type        = string
-  description = "API Key fuer den Exoscale Account"
-  sensitive   = true
+variable "zone" {
+  type    = string
+  default = "at-vie-1"
 }
 
-# Platzhalter fuer das Exoscale API-Secret (Passwort)
-variable "exoscale_secret" {
-  type        = string
-  description = "API Secret fuer den Exoscale Account"
-  sensitive   = true
+variable "instance_template" {
+  type    = string
+  default = "Linux Ubuntu 24.04 LTS 64-bit"
+}
+
+variable "instance_name" {
+  type    = string
+  default = "pmen753-sysinfo-vm"
+}
+
+variable "instance_type" {
+  type    = string
+  default = "standard.micro"
 }
