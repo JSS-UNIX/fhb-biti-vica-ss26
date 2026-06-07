@@ -30,7 +30,7 @@ jobs:
     defaults:
       run:
         # Alle tofu Befehle laufen im Abgabe-Unterordner.
-        working-directory: Abgabe_2_eda_konakci/terraform
+        working-directory: Abgabe_2_2026/terraform
 
     env:
       # Secrets werden als Terraform Variablen bereitgestellt.

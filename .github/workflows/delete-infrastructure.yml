@@ -29,7 +29,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: Abgabe_2_eda_konakci/terraform
+        working-directory: Abgabe_2_2026/terraform
 
     env:
       # Gleiche Variablen wie beim Erstellen, damit OpenTofu denselben State und dieselben Ressourcen kennt.
