@@ -1,100 +1,56 @@
 #cloud-config
 
-# Pakete aktualisieren und installieren
-package_update: true
-package_upgrade: true
-
-packages:
-  - apache2
-  - jq
-
-# Befehle die beim ersten Start der VM ausgeführt werden
+# CloudInit führt die komplette Betriebssystem-Konfiguration automatisch aus
 runcmd:
+
+  # Paketlisten aktualisieren
+  - apt-get update -y
+
+  # Apache und curl installieren
+  - apt-get install -y apache2 curl
 
   # Apache aktivieren und starten
   - systemctl enable apache2
   - systemctl start apache2
 
-
-  # Script erstellen welches VM Informationen sammelt
+  # VM Informationen sammeln und HTML/JSON Dateien erstellen
   - |
-    cat > /usr/local/bin/create-info.sh << 'EOF'
-    #!/bin/bash
-
-    # Öffentliche IP-Adresse bestimmen
-    PUBLIC_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
-
-    # Kernel Version
+    PUBLIC_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4 || hostname -I | awk '{print $1}')
     KERNEL=$(uname -r)
-
-    # Arbeitsspeicher
     MEMORY=$(free -h | grep Mem | awk '{print $2}')
-
-    # Speicherplatz
     STORAGE=$(df -h / | tail -1 | awk '{print $2}')
-
-    # Dateisystem
     FILESYSTEM=$(df -T / | tail -1 | awk '{print $2}')
-
-    # Hypervisor Informationen
     HYPERVISOR=$(systemd-detect-virt)
 
-
-    # HTML Webseite erstellen
-    cat > /var/www/html/index.html << HTML
-
+    cat > /var/www/html/index.html <<EOF
     <html>
-
     <head>
         <title>Exoscale VM Informationen</title>
     </head>
-
     <body>
-
         <h1>Virtualisierung Abgabe 2</h1>
-
         <h2>Technische Informationen der VM</h2>
 
         <p><b>Public IP:</b> $PUBLIC_IP</p>
-
         <p><b>Kernel:</b> $KERNEL</p>
-
         <p><b>Memory:</b> $MEMORY</p>
-
         <p><b>Storage:</b> $STORAGE</p>
-
         <p><b>Filesystem:</b> $FILESYSTEM</p>
-
         <p><b>Hypervisor:</b> $HYPERVISOR</p>
-
-
     </body>
-
     </html>
+EOF
 
-HTML
+    cat > /var/www/html/api <<EOF
+{
+  "public_ip": "$PUBLIC_IP",
+  "kernel": "$KERNEL",
+  "memory": "$MEMORY",
+  "storage": "$STORAGE",
+  "filesystem": "$FILESYSTEM",
+  "hypervisor": "$HYPERVISOR"
+}
+EOF
 
-
-    # JSON API erstellen
-    cat > /var/www/html/api << JSON
-
-    {
-        "public_ip": "$PUBLIC_IP",
-        "kernel": "$KERNEL",
-        "memory": "$MEMORY",
-        "storage": "$STORAGE",
-        "filesystem": "$FILESYSTEM",
-        "hypervisor": "$HYPERVISOR"
-    }
-
-JSON
-
-    EOF
-
-
-  # Script ausführbar machen
-  - chmod +x /usr/local/bin/create-info.sh
-
-
-  # Script starten
-  - /usr/local/bin/create-info.sh
+  # Apache nochmal sicher neu starten
+  - systemctl restart apache2
