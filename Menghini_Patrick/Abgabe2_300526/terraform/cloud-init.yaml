@@ -1,10 +1,10 @@
 #cloud-config
-# Systempakete aktualisieren und benötigte Tools installieren
+# Systempakete aktualisieren und benoetigte Tools installieren
 package_update: true
 package_upgrade: true
 packages:
-  - curl        # Wird benötigt, um die eigene öffentliche IP abzufragen
-  - util-linux  # Enthält grundlegende System-Tools (lsblk etc.)
+  - curl        # Wird benoetigt, um die eigene oeffentliche IP abzufragen
+  - util-linux  # Enthaelt grundlegende System-Tools (lsblk etc.)
   - dmidecode   # Zum Auslesen von Hypervisor/Hardware-Infos
   - net-tools   # Netzwerk-Tools (ifconfig, netstat)
 
@@ -17,7 +17,7 @@ write_files:
     content: |
       #!/bin/bash
       # Dieses Skript sammelt die technischen Details der VM und speichert sie als HTML
-      # Es wird bei jedem HTTP-Request neu ausgeführt, damit die Daten immer aktuell sind
+      # Es wird bei jedem HTTP-Request neu ausgefuehrt, damit die Daten immer aktuell sind
       mkdir -p /var/www/html
 
       # Systemdaten sammeln
@@ -28,18 +28,18 @@ write_files:
       HYPERVISOR=$(systemd-detect-virt)
       HYPERVISOR_DETAIL=$(dmidecode -s system-product-name 2>/dev/null || echo "N/A")
       HYPERVISOR_VENDOR=$(dmidecode -s system-manufacturer 2>/dev/null || echo "N/A")
-      PUBLIC_IP=$(curl -s --max-time 5 ifconfig.me || echo "nicht verfügbar")
+      PUBLIC_IP=$(curl -s --max-time 5 ifconfig.me || echo "nicht verfuegbar")
       PRIVATE_IPS=$(hostname -I | xargs)
       HOSTNAME_INFO=$(hostname)
       CPU_MODEL=$(lscpu | grep "Model name" | cut -d: -f2- | xargs)
       CPU_CORES=$(nproc)
       CPU_ARCH=$(lscpu | grep "Architecture" | cut -d: -f2- | xargs)
-      MEMORY_INFO=$(free -h | awk '/^Mem:/ {print $2 " gesamt, " $3 " genutzt, " $7 " verfügbar"}')
+      MEMORY_INFO=$(free -h | awk '/^Mem:/ {print $2 " gesamt, " $3 " genutzt, " $7 " verfuegbar"}')
       DISK_ROOT=$(df -h / | awk '/\// {print $2 " gesamt, " $3 " genutzt, " $4 " frei (" $5 " belegt)"}')
       UPTIME_INFO=$(uptime -p)
       TIMESTAMP=$(date '+%d.%m.%Y %H:%M:%S %Z')
 
-      # HTML-Datei mit allen Systemdaten befüllen
+      # HTML-Datei mit allen Systemdaten befuellen
       cat <<EOF > /var/www/html/index.html
       <!DOCTYPE html>
       <html>
@@ -69,7 +69,7 @@ write_files:
           <div class="section">
           <h2>Netzwerk</h2>
           <pre>
-      <strong>Öffentliche IP:</strong>    ${PUBLIC_IP}
+      <strong>Oeffentliche IP:</strong>   ${PUBLIC_IP}
       <strong>Private IPs:</strong>       ${PRIVATE_IPS}
           </pre>
           </div>
@@ -144,7 +144,7 @@ write_files:
       /usr/local/bin/generate-sysinfo.sh > /dev/null 2>&1
       cat /var/www/html/index.html
 
-  # === systemd Service: Python Webserver, überlebt Reboots ===
+  # === systemd Service: Python Webserver, ueberlebt Reboots ===
   - path: /etc/systemd/system/sysinfo-web.service
     content: |
       [Unit]
@@ -167,14 +167,14 @@ write_files:
   # === Cronjob: Aktualisiert die Systemdaten alle 60 Sekunden ===
   - path: /etc/cron.d/sysinfo-refresh
     content: |
-      # Jede Minute die Systemdaten neu generieren (Uptime, RAM etc. ändern sich)
+      # Jede Minute die Systemdaten neu generieren (Uptime, RAM etc. aendern sich)
       * * * * * root /usr/local/bin/generate-sysinfo.sh > /dev/null 2>&1
 
-# Befehle nach dem Boot ausführen
+# Befehle nach dem Boot ausfuehren
 runcmd:
   # Erste HTML-Seite generieren
   - /usr/local/bin/generate-sysinfo.sh
-  # systemd Service aktivieren und starten (überlebt Reboots!)
+  # systemd Service aktivieren und starten (ueberlebt Reboots!)
   - systemctl daemon-reload
   - systemctl enable sysinfo-web.service
   - systemctl start sysinfo-web.service
