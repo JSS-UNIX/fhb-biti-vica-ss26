@@ -1,7 +1,7 @@
 # Lokale Werte halten wiederverwendete Bedingungen und Strings zentral.
 locals {
   # DNS ist aktiv, sobald eine Domain gesetzt ist.
-  dns_enabled = trim(var.dns_domain) != ""
+  dns_enabled = trimspace(var.dns_domain) != ""
 
   # FQDN wird nur gebildet, wenn DNS aktiv ist.
   fqdn = local.dns_enabled ? "${var.dns_record_name}.${var.dns_domain}" : ""
