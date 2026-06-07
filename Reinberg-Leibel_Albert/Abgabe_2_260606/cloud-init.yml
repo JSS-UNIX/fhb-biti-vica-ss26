@@ -6,11 +6,7 @@ package_update: true
 # 2. Pakete installieren
 packages:
   - nginx
-  - certbot
-  - python3-certbot-nginx
   - curl
-  - gnupg
-  - ca-certificates
 
 # 3. Unser Bash-Skript zur Generierung des Dashboards erstellen
 write_files:
@@ -20,39 +16,35 @@ write_files:
       #!/bin/bash
       
       # --- SYSTEMDATEN SAMMELN ---
+      # Aktuelles Datum und Uhrzeit formatieren (z.B. 14.05.2024 15:30:00)
+      LAST_UPDATED=$(date "+%d.%m.%Y %H:%M:%S")
+      
       # Öffentliche IP abfragen
       PUBLIC_IP=$(curl -s --max-time 5 http://ifconfig.me || echo "Nicht ermittelbar")
       KERNEL=$(uname -srm)
       HYPERVISOR=$(systemd-detect-virt || echo "Unbekannt")
       
       # --- RAM BERECHNUNG ---
-      # Prozentwert für das Dial-Element (Rundinstrument)
       MEMORY_PERCENT=$(free | awk '/^Mem:/ {printf("%.0f"), $3/$2 * 100}')
-      # Text-Label unter dem Dial (z.B. "Gesamt: 4.0G / Genutzt: 1.2G")
       MEMORY=$(free -h | awk '/^Mem:/ {print "Gesamt: " $2 " / Genutzt: " $3}')
       
       # --- SYSTEM-SPEICHER BERECHNUNG (Root /) ---
-      # Prozentwert für das Dial-Element
       STORAGE_PERCENT=$(df / | awk 'NR==2 {print $5}' | sed 's/%//')
-      # Text-Label unter dem Dial (z.B. "Größe: 25G / Frei: 12G")
       ROOT_STORAGE=$(df -h / | awk 'NR==2 {print "Größe: " $2 " / Frei: " $4}')
       
       # --- DATEISYSTEM TABELLE ---
-      # Baut direkt alle <tr> HTML-Zeilen für die Festplatten auf (funktioniert hier fehlerfrei)
       FS_TABLE=$(df -hT -x tmpfs -x devtmpfs | tail -n +2 | awk '{print "<tr><td>"$1"</td><td>"$2"</td><td>"$3"</td><td>"$5"</td><td>"$7"</td></tr>"}')
 
       # --- HTML-DATEI GENERIEREN ---
-      # cat <<EOF schreibt alles bis zum nächsten "EOF" direkt in die index.html
-      # Bash ersetzt die Variablen ($...) dabei automatisch im laufenden Text!
       cat <<EOF > /var/www/html/index.html
       <!DOCTYPE html>
       <html lang="de">
       <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <meta http-equiv="refresh" content="60">
           <title>VM Dashboard</title>
           <style>
-              /* Farbpalette für den Dark Mode */
               :root {
                   --bg-color: #121212;
                   --text-color: #e0e0e0;
@@ -91,7 +83,6 @@ write_files:
                   font-size: 1.2em;
               }
 
-              /* Tabellen-Styling */
               table { 
                   width: 100%; 
                   border-collapse: collapse; 
@@ -116,7 +107,6 @@ write_files:
               tr:last-child td { border-bottom: none; }
               tr:hover { background-color: var(--hover-bg); }
 
-              /* --- STYLING FÜR DIE RUNDINSTRUMENTE (DIALS) --- */
               .dials-container {
                   display: flex;
                   gap: 30px;
@@ -128,7 +118,7 @@ write_files:
                   padding: 20px;
                   border-radius: 8px;
                   box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-                  width: 230px; /* Leicht vergrößert für deinen längeren Text */
+                  width: 230px; 
                   text-align: center;
               }
               .dial-wrapper h3 {
@@ -169,8 +159,8 @@ write_files:
           </style>
       </head>
       <body>
-          <h1>Server Dashboard</h1>
-          <p class="subtitle">Hello World - Albert was here</p>
+          <h1>Albert's Webserver Dashboard</h1>
+          <p class="subtitle">Zuletzt aktualisiert: $LAST_UPDATED</p>
           
           <h2>Ressourcen-Auslastung</h2>
           <div class="dials-container">
@@ -205,7 +195,7 @@ write_files:
               <tr><td>Hypervisor</td><td>$HYPERVISOR</td></tr>
           </table>
           
-          <h2>Detaillierte Filesysteme</h2>
+          <h2>Detailsansicht Filesysteme</h2>
           <table>
               <tr><th>Dateisystem</th><th>Typ</th><th>Gesamt</th><th>Verfügbar</th><th>Mountpoint</th></tr>
               $FS_TABLE
@@ -218,6 +208,10 @@ write_files:
 runcmd:
   # Das Skript ausführen, um die index.html initial zu befüllen
   - /usr/local/bin/init-dashboard.sh
-  # Nginx aktivieren und starten, damit die Webseite erreichbar wird
+  # Nginx aktivieren und starten
   - systemctl enable nginx
   - systemctl start nginx
+  # Cronjob einrichten: Führt das Dashboard-Skript jede Minute (*) als root aus
+  - echo "* * * * * root /usr/local/bin/init-dashboard.sh" > /etc/cron.d/update-dashboard
+  # Rechte für die Cron-Datei richtig setzen (erforderlich)
+  - chmod 0644 /etc/cron.d/update-dashboard
