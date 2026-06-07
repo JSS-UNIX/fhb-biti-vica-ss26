@@ -70,6 +70,6 @@ resource "exoscale_compute_instance" "vm" {
 
 # URL der fertigen VM ausgeben
 output "vm_url" {
-  value       = "http://${exoscale_compute_instance.vm.public_ip_address}"
-  description = "URL zum HTTP-Endpunkt mit den Systemdetails"
+  value       = "https://${exoscale_compute_instance.vm.public_ip_address}"
+  description = "Die fertige URL zum HTTPS-Endpunkt mit den Systemdetails"
 }
