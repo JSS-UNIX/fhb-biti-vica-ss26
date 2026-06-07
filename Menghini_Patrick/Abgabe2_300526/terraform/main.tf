@@ -16,7 +16,7 @@ provider "exoscale" {
 
 # Security Group (Firewall) anlegen
 resource "exoscale_security_group" "web_sg" {
-  name        = "pmen-web-sg"
+  name        = "pmen753-web-sg"
   description = "Erlaubt eingehenden HTTP-Verkehr auf Port 80"
 }
 
@@ -39,20 +39,16 @@ data "exoscale_template" "ubuntu" {
 # Erstellen der VM
 resource "exoscale_compute_instance" "sysinfo_vm" {
   zone        = "at-vie-1"
-  name        = "pmen-sysinfo-vm"
+  name        = "pmen753-sysinfo-vm"
   type        = "standard.micro"
   disk_size   = 10
   template_id = data.exoscale_template.ubuntu.id
 
-  # Personalisierte Firewall an die VM haengen
   security_group_ids = [exoscale_security_group.web_sg.id]
 
-  # Das Cloud-Init-Skript einlesen und an die VM uebergeben
-  # Wird beim ersten Boot automatisch ausgefuehrt
   user_data = file("${path.module}/cloud-init.yaml")
 }
 
-# Gibt nach dem erfolgreichen Setup die URL der VM aus
 output "vm_url" {
   value       = "http://${exoscale_compute_instance.sysinfo_vm.public_ip_address}"
   description = "Die fertige URL zum HTTP-Endpunkt mit den Systemdetails"
