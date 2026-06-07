@@ -41,6 +41,12 @@ resource "exoscale_security_group_rule" "ssh" {
   end_port          = 22
 }
 
+# Ubuntu Template anhand des Namens und der Zone suchen
+data "exoscale_template" "ubuntu" {
+  zone = "at-vie-1"
+  template_id = data.exoscale_template.ubuntu.id
+}
+
 # Erstellung der Ubuntu VM in Exoscale
 resource "exoscale_compute_instance" "vm" {
   name = "ebin-vica-vm"
