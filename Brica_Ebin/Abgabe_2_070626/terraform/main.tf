@@ -62,8 +62,10 @@ resource "exoscale_compute_instance" "vm" {
   # Größe der Systemdisk
   disk_size = 10
 
-  # Zuweisung der Security Group
-  security_group_id = exoscale_security_group.web.id
+# Zuweisung der Security Group
+security_group_ids = [
+  exoscale_security_group.web.id
+]
 
   # CloudInit führt die komplette Betriebssystemkonfiguration automatisch aus
   user_data = file("${path.module}/cloud-init.yaml")
