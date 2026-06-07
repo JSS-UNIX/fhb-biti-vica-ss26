@@ -1,4 +1,4 @@
-name: Wagner Raphael Abgabe 2 - Infrastruktur loeschen
+name: Infrastruktur loeschen
 
 # Separate manuelle Aktion, damit die Infrastruktur nach der Bewertung wieder
 # gezielt entfernt werden kann.

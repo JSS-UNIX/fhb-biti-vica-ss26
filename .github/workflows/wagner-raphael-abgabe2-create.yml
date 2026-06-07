@@ -1,4 +1,4 @@
-name: Wagner Raphael Abgabe 2 - Infrastruktur erstellen
+name: Infrastruktur erstellen
 
 # Der Workflow ist absichtlich nur manuell startbar, damit keine Exoscale-Kosten
 # durch normale Pushes oder Pull Requests entstehen.

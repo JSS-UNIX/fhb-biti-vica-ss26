@@ -55,7 +55,7 @@ Dadurch kollidiert diese Abgabe nicht mit anderen Abgaben im selben Repository.
 1. Im eigenen Fork des Kursrepositories die Secrets `EXOSCALE_API_KEY` und
    `EXOSCALE_API_SECRET` fuer GitHub Actions setzen. Im fremden Kursrepository
    selbst sind diese Secrets fuer Studierende nicht konfigurierbar.
-2. Den Workflow **Wagner Raphael Abgabe 2 - Infrastruktur erstellen** starten.
+2. Den Workflow **Infrastruktur erstellen** starten.
 3. Optional eine Exoscale-DNS-Zone angeben:
    - `dns_zone`, zum Beispiel `example.at`
    - `dns_record_name`, zum Beispiel `vica-rwagner`

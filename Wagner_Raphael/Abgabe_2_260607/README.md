@@ -43,7 +43,7 @@ Wenn die Variable nicht gesetzt ist, verwendet der Workflow den Bucket
 ## Infrastruktur erstellen
 
 1. Im eigenen Fork den Reiter **Actions** oeffnen.
-2. Workflow **Wagner Raphael Abgabe 2 - Infrastruktur erstellen** auswaehlen.
+2. Workflow **Infrastruktur erstellen** auswaehlen.
 3. Optional `dns_zone` und `dns_record_name` ausfuellen.
 4. **Run workflow** starten.
 5. Nach dem Lauf die URL aus der Job-Zusammenfassung oeffnen.
@@ -54,7 +54,7 @@ Caddy und die App antworten.
 ## Infrastruktur loeschen
 
 1. Im eigenen Fork im Reiter **Actions** den Workflow
-   **Wagner Raphael Abgabe 2 - Infrastruktur loeschen** auswaehlen.
+   **Infrastruktur loeschen** auswaehlen.
 2. **Run workflow** starten.
 3. Der Workflow verwendet denselben Remote-State und entfernt die Ressourcen.
 
