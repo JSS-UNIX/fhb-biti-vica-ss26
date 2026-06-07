@@ -11,8 +11,9 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      EXOSCALE_API_KEY: ${{ secrets.EXOSCALE_KEY }}
-      EXOSCALE_API_SECRET: ${{ secrets.EXOSCALE_SECRET }}
+      EXOSCALE_API_KEY: ${{ secrets.EXOSCALE_API_KEY }}
+      EXOSCALE_API_SECRET: ${{ secrets.EXOSCALE_API_SECRET }}
+      EXOSCALE_CONFIG: ""
 
     steps:
       - name: Checkout Code
