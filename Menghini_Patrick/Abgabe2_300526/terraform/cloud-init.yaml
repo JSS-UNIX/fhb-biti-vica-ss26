@@ -3,12 +3,14 @@
 package_update: true
 package_upgrade: true
 packages:
-  - curl        # Wird benoetigt, um die eigene oeffentliche IP abzufragen
-  - util-linux  # Enthaelt grundlegende System-Tools (lsblk etc.)
-  - dmidecode   # Zum Auslesen von Hypervisor/Hardware-Infos
-  - net-tools   # Netzwerk-Tools (ifconfig, netstat)
+  - curl
+  - util-linux
+  - dmidecode
+  - net-tools
+  - debian-keyring
+  - debian-archive-keyring
+  - apt-transport-https
 
-# Skripte und Service-Dateien anlegen
 write_files:
 
   # === Skript: Sammelt alle technischen Details der VM und erzeugt HTML ===
@@ -16,11 +18,8 @@ write_files:
     permissions: '0755'
     content: |
       #!/bin/bash
-      # Dieses Skript sammelt die technischen Details der VM und speichert sie als HTML
-      # Es wird bei jedem HTTP-Request neu ausgefuehrt, damit die Daten immer aktuell sind
       mkdir -p /var/www/html
 
-      # Systemdaten sammeln
       OS_INFO=$(hostnamectl | grep "Operating System" | cut -d: -f2- | xargs)
       KERNEL_VERSION=$(uname -r)
       KERNEL_TYPE=$(uname -s)
@@ -39,7 +38,6 @@ write_files:
       UPTIME_INFO=$(uptime -p)
       TIMESTAMP=$(date '+%d.%m.%Y %H:%M:%S %Z')
 
-      # HTML-Datei mit allen Systemdaten befuellen
       cat <<EOF > /var/www/html/index.html
       <!DOCTYPE html>
       <html>
@@ -134,17 +132,20 @@ write_files:
       </html>
       EOF
 
-  # === CGI-Wrapper: Generiert bei jedem Request frische Daten ===
-  - path: /usr/local/bin/serve-sysinfo.sh
-    permissions: '0755'
+  # === Caddy Config: HTTPS Reverse Proxy ===
+  - path: /etc/caddy/Caddyfile
     content: |
-      #!/bin/bash
-      # Dieser Wrapper wird bei jedem HTTP-Request aufgerufen.
-      # Er generiert die HTML-Seite neu (frische Daten!) und gibt sie aus.
-      /usr/local/bin/generate-sysinfo.sh > /dev/null 2>&1
-      cat /var/www/html/index.html
+      # Fuer IP-Adresse: self-signed Zertifikat (tls internal)
+      # Fuer Domain: einfach die IP durch die Domain ersetzen, Caddy holt automatisch Let's Encrypt
+      :443 {
+        tls internal
+        reverse_proxy localhost:8080
+      }
+      :80 {
+        redir https://{host}{uri} permanent
+      }
 
-  # === systemd Service: Python Webserver, ueberlebt Reboots ===
+  # === systemd Service: Python Webserver nur auf localhost ===
   - path: /etc/systemd/system/sysinfo-web.service
     content: |
       [Unit]
@@ -153,10 +154,8 @@ write_files:
       Wants=network-online.target
 
       [Service]
-      # Vor jedem Start frische Daten generieren
       ExecStartPre=/usr/local/bin/generate-sysinfo.sh
-      # Python HTTP-Server auf Port 80 starten
-      ExecStart=/usr/bin/python3 -m http.server 80 --directory /var/www/html
+      ExecStart=/usr/bin/python3 -m http.server 8080 --bind 127.0.0.1 --directory /var/www/html
       WorkingDirectory=/var/www/html
       Restart=always
       RestartSec=5
@@ -164,17 +163,23 @@ write_files:
       [Install]
       WantedBy=multi-user.target
 
-  # === Cronjob: Aktualisiert die Systemdaten alle 60 Sekunden ===
+  # === Cronjob: Aktualisiert Systemdaten jede Minute ===
   - path: /etc/cron.d/sysinfo-refresh
     content: |
-      # Jede Minute die Systemdaten neu generieren (Uptime, RAM etc. aendern sich)
       * * * * * root /usr/local/bin/generate-sysinfo.sh > /dev/null 2>&1
 
-# Befehle nach dem Boot ausfuehren
 runcmd:
+  # Caddy installieren (offizielles Repository)
+  - curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+  - curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list
+  - apt-get update
+  - apt-get install -y caddy
   # Erste HTML-Seite generieren
   - /usr/local/bin/generate-sysinfo.sh
-  # systemd Service aktivieren und starten (ueberlebt Reboots!)
+  # Python Webserver starten (intern auf Port 8080)
   - systemctl daemon-reload
   - systemctl enable sysinfo-web.service
   - systemctl start sysinfo-web.service
+  # Caddy starten (HTTPS auf 443, HTTP-Redirect auf 80)
+  - systemctl enable caddy
+  - systemctl restart caddy
