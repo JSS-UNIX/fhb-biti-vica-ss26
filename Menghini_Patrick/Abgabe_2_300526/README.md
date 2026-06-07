@@ -1,6 +1,4 @@
-# Abgabe 2 - Automatisierte Exoscale VM mit System-Info HTTPS-Endpunkt
-
-## Übersicht
+# Übersicht
 Eine GitHub Action deployt automatisch eine Ubuntu-VM auf Exoscale, die per HTTPS-Endpunkt technische Details über sich selbst bereitstellt. Die gesamte Infrastruktur wird mit Terraform über GitHub Actions Workflows aufgebaut und wieder abgerissen. Cloud-Init übernimmt die vollständige VM-Konfiguration — ein manueller Eingriff ist nicht nötig.
 
 **Endpunkt:** `https://<VM-IP>` (self-signed Zertifikat)
@@ -25,7 +23,7 @@ GitHub Actions                     Exoscale Cloud (at-vie-1)
 | Deploy Workflow  |--Terraform-->| Security Group            |
 |                  |              |   Port 80, 443, 22 offen  |
 | Destroy Workflow |              |                           |
-+------------------+              | Ubuntu 24.04 VM           |
++------------------+              | Ubuntu 26.04 VM           |
                                   |   Cloud-Init:             |
   Terraform State                 |   - Caddy (HTTPS, :443)   |
   (im Git Repo)                   |   - Python Server (:8080) |
@@ -159,7 +157,7 @@ Caddy generiert beim ersten Start ein self-signed TLS-Zertifikat mit OpenSSL. Po
 | Infrastruktur | Terraform + Exoscale Provider | VM und Security Group erstellen/loeschen |
 | CI/CD | GitHub Actions | Automatisierte Workflows |
 | Cloud Provider | Exoscale (Zone at-vie-1) | Hosting der VM |
-| Betriebssystem | Ubuntu 24.04 LTS | VM-Grundlage |
+| Betriebssystem | Ubuntu 26.04 LTS | VM-Grundlage |
 | OS-Konfiguration | Cloud-Init | Automatisierte Einrichtung beim Boot |
 | HTTPS Proxy | Caddy | TLS-Terminierung und Reverse Proxy |
 | Webserver | Python http.server | HTML-Seite ausliefern |
