@@ -26,15 +26,15 @@ jobs:
 
       - name: Terraform Init
         run: terraform init -reconfigure
-        working-directory: ./Menghini_Patrick/Abgabe2_300526/terraform
+        working-directory: ./Menghini_Patrick/Abgabe_2_300526/terraform
 
       - name: Terraform Plan
         run: terraform plan
-        working-directory: ./Menghini_Patrick/Abgabe2_300526/terraform
+        working-directory: ./Menghini_Patrick/Abgabe_2_300526/terraform
 
       - name: Terraform Apply
         run: terraform apply -auto-approve
-        working-directory: ./Menghini_Patrick/Abgabe2_300526/terraform
+        working-directory: ./Menghini_Patrick/Abgabe_2_300526/terraform
 
       - name: Show VM URL
         run: |
@@ -45,7 +45,7 @@ jobs:
           echo "VM URL: $(terraform output -raw vm_url)"
           echo ""
           echo "Hinweis: Cloud-Init braucht ca. 2-3 Minuten."
-        working-directory: ./Menghini_Patrick/Abgabe2_300526/terraform
+        working-directory: ./Menghini_Patrick/Abgabe_2_300526/terraform
 
       - name: Commit & Push Terraform State
         run: |
@@ -56,7 +56,7 @@ jobs:
           git push
 
       - name: Endpunkt testen
-        working-directory: ./Menghini_Patrick/Abgabe2_300526/terraform
+        working-directory: ./Menghini_Patrick/Abgabe_2_300526/terraform
         run: |
           URL=$(terraform output -raw vm_url)
           echo "Warte 120 Sekunden auf Cloud-Init..."
