@@ -6,7 +6,7 @@ data "exoscale_template" "ubuntu" {
 
 # Optionaler SSH Key: wird nur angelegt, wenn ssh_public_key nicht leer ist.
 resource "exoscale_ssh_key" "admin" {
-  count      = trim(var.ssh_public_key) != "" ? 1 : 0
+  count      = trimspace(var.ssh_public_key) != "" ? 1 : 0
   name       = "${var.instance_name}-admin-key"
   public_key = var.ssh_public_key
 }
@@ -41,7 +41,7 @@ resource "exoscale_security_group_rule" "https" {
 
 # SSH nur optional und nur aus einem explizit gesetzten CIDR erlauben.
 resource "exoscale_security_group_rule" "ssh" {
-  count             = trim(var.ssh_allowed_cidr) != "" ? 1 : 0
+  count             = trimspace(var.ssh_allowed_cidr) != "" ? 1 : 0
   security_group_id = exoscale_security_group.web.id
   type              = "INGRESS"
   protocol          = "TCP"
@@ -65,7 +65,7 @@ resource "exoscale_compute_instance" "vm_details" {
   security_group_ids = [exoscale_security_group.web.id]
 
   # Optionaler SSH Key, wenn angegeben.
-  ssh_keys = trim(var.ssh_public_key) != "" ? [exoscale_ssh_key.admin[0].name] : []
+  ssh_keys = trimspace(var.ssh_public_key) != "" ? [exoscale_ssh_key.admin[0].name] : []
 
   # Cloud-Init installiert Nginx, generiert HTML/JSON und richtet HTTPS ein.
   user_data = local.cloud_init
