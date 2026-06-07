@@ -17,7 +17,7 @@ provider "exoscale" {
 
 # Security Group für die virtuelle Maschine
 resource "exoscale_security_group" "web" {
-  name = "ebin-vica-security-group"
+  name = "ebin-vica-security-group-070626"
 }
 
 # Firewall Regel für HTTP Zugriff auf Port 80
