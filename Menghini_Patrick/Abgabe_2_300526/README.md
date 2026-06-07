@@ -50,15 +50,15 @@ GitHub Actions                     Exoscale Cloud (at-vie-1)
 ## Dateistruktur
 
 ```
-Menghini_Patrick/Abgabe2_300526/
+Menghini_Patrick/Abgabe_2_300526/
 +-- terraform/
 |   +-- main.tf              # Terraform Hauptkonfiguration (Provider, VM, Security Group)
 |   +-- variables.tf         # Eingabevariablen (Zone, Instanztyp, Name)
 |   +-- cloud-init.yaml      # Automatische VM-Konfiguration beim Boot
 |
 .github/workflows/            # (im Repo-Root, nicht im Unterordner)
-+-- pmen753-deploy.yml        # Workflow: Infrastruktur erstellen
-+-- pmen753-destroy.yml       # Workflow: Infrastruktur loeschen
++-- deploy.yml        # Workflow: Infrastruktur erstellen
++-- destroy.yml       # Workflow: Infrastruktur loeschen
 ```
 
 ---
