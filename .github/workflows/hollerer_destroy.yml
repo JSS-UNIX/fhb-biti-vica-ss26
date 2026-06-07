@@ -28,7 +28,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: Abgabe_2_xxx/terraform
+        working-directory: Abgabe_2_260607/terraform
 
     steps:
       - name:  Repository auschecken
@@ -46,7 +46,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: terraform-state
-          path: Abgabe_2_xxx/terraform/
+          path: Abgabe_2_260607/terraform/
 
       - name:  Terraform init
         run: terraform init
