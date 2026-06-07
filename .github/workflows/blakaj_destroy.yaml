@@ -9,10 +9,7 @@ jobs:
 
     steps:
       - name: Install Exoscale CLI
-        run: |
-          LATEST_URL=$(curl -s https://api.github.com/repos/exoscale/cli/releases/latest | grep "browser_download_url.*linux_amd64.tar.gz" | cut -d '"' -f 4)
-          curl -sL "$LATEST_URL" | tar -xz
-          sudo mv exo /usr/local/bin/exo
+        run: curl -fsSL https://raw.githubusercontent.com/exoscale/cli/master/install-latest.sh | sh
 
       - name: Delete VM and Security Group
         env:
