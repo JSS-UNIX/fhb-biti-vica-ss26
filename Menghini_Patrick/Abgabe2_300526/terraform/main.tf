@@ -3,7 +3,7 @@ terraform {
   required_providers {
     exoscale = {
       source  = "exoscale/exoscale"
-      version = "~> 0.53.0" # Definition der zu verwendenden Provider-Version
+      version = "~> 0.53.0"
     }
   }
 }
@@ -17,10 +17,10 @@ provider "exoscale" {
 # Security Group (Firewall) anlegen
 resource "exoscale_security_group" "web_sg" {
   name        = "pmen-web-sg"
-  description = "Erlaubt eingehenden HTTP-Verkehr auf Port 80 fuer pmen"
+  description = "Erlaubt eingehenden HTTP-Verkehr auf Port 80"
 }
 
-# Regel hinzufügen: Erlaube HTTP (Port 80) von überall (0.0.0.0/0)
+# Regel: Erlaube HTTP (Port 80) von ueberall
 resource "exoscale_security_group_rule" "http_rule" {
   security_group_id = exoscale_security_group.web_sg.id
   type              = "INGRESS"
@@ -32,23 +32,23 @@ resource "exoscale_security_group_rule" "http_rule" {
 
 # Automatische Suche nach dem aktuellen Ubuntu Template
 data "exoscale_template" "ubuntu" {
-  zone = "at-vie-1" # Region Wien
-  name = "Linux Ubuntu 26.04 LTS 64-bit"
+  zone = "at-vie-1"
+  name = "Linux Ubuntu 24.04 LTS 64-bit"
 }
 
 # Erstellen der VM
 resource "exoscale_compute_instance" "sysinfo_vm" {
-  zone        = "at-vie-1"                       # Standort in Wien
+  zone        = "at-vie-1"
   name        = "pmen-sysinfo-vm"
-  type        = "standard.micro"                  # Kleinstmöglicher Instanztyp
-  disk_size   = 10                                # Mindestgröße der Platte in GB
-  template_id = data.exoscale_template.ubuntu.id  # ID des gefundenen Templates nutzen
+  type        = "standard.micro"
+  disk_size   = 10
+  template_id = data.exoscale_template.ubuntu.id
 
-  # Zuvor erstellte personalisierte Firewall an die VM hängen
+  # Personalisierte Firewall an die VM haengen
   security_group_ids = [exoscale_security_group.web_sg.id]
 
-  # Das Cloud-Init-Skript einlesen und an die VM übergeben
-  # Wird beim ersten Boot automatisch ausgeführt
+  # Das Cloud-Init-Skript einlesen und an die VM uebergeben
+  # Wird beim ersten Boot automatisch ausgefuehrt
   user_data = file("${path.module}/cloud-init.yaml")
 }
 
