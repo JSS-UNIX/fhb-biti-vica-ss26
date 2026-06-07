@@ -1,5 +1,4 @@
 #cloud-config
-# Systempakete aktualisieren und benoetigte Tools installieren
 package_update: true
 package_upgrade: true
 packages:
@@ -132,17 +131,6 @@ write_files:
       </html>
       EOF
 
-  # === Caddy Config: HTTPS Reverse Proxy ===
-  - path: /etc/caddy/Caddyfile
-    content: |
-      :443 {
-        tls internal
-        reverse_proxy localhost:8080
-      }
-      :80 {
-        redir https://{host}{uri} permanent
-      }
-
   # === systemd Service: Python Webserver nur auf localhost ===
   - path: /etc/systemd/system/sysinfo-web.service
     content: |
@@ -171,15 +159,23 @@ runcmd:
   - curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
   - curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list
   - apt-get update
-  # Caddy installieren - DEBIAN_FRONTEND verhindert interaktive Nachfragen
-  # --force-confold behaelt unsere Caddyfile statt die vom Paket
-  - DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::="--force-confold" caddy
+  # Caddy installieren - kein Konflikt weil Caddyfile noch nicht existiert
+  - apt-get install -y caddy
+  # NACH der Installation die Caddyfile mit unserer Config ueberschreiben
+  - cp /etc/caddy/Caddyfile /etc/caddy/Caddyfile.bak
+  - echo ':443 {' > /etc/caddy/Caddyfile
+  - echo '  tls internal' >> /etc/caddy/Caddyfile
+  - echo '  reverse_proxy localhost:8080' >> /etc/caddy/Caddyfile
+  - echo '}' >> /etc/caddy/Caddyfile
+  - echo ':80 {' >> /etc/caddy/Caddyfile
+  - echo '  redir https://{host}{uri} permanent' >> /etc/caddy/Caddyfile
+  - echo '}' >> /etc/caddy/Caddyfile
   # Erste HTML-Seite generieren
   - /usr/local/bin/generate-sysinfo.sh
   # Python Webserver starten (intern auf Port 8080)
   - systemctl daemon-reload
   - systemctl enable sysinfo-web.service
   - systemctl start sysinfo-web.service
-  # Caddy starten (HTTPS auf 443, HTTP-Redirect auf 80)
+  # Caddy mit unserer Config starten
   - systemctl enable caddy
   - systemctl restart caddy
