@@ -73,7 +73,7 @@ resource "exoscale_security_group_rule" "https" {
 resource "exoscale_compute_instance" "web" {
   name               = "vica-sysinfo"
   zone               = "at-vie-1"                      # Rechenzentrum Wien
-  template_id        = data.exoscale_compute_template.ubuntu.id
+  template_id        = data.exoscale_template.ubuntu.id
   type               = "standard.small"                # 2 vCPU, 2 GB RAM
   disk_size          = 50                              # GB
   security_group_ids = [exoscale_security_group.web.id]
@@ -86,8 +86,7 @@ resource "exoscale_compute_instance" "web" {
 # =============================================================================
 # Data Source: Ubuntu 22.04 LTS Template suchen
 # =============================================================================
-data "exoscale_compute_template" "ubuntu" {
+data "exoscale_template" "ubuntu" {
   zone   = "at-vie-1"
   name   = "Linux Ubuntu 22.04 LTS 64-bit"
-  family = "ubuntu"
 }
