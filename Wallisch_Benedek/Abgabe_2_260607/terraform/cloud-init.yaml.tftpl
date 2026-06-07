@@ -9,7 +9,7 @@ write_files:
   - path: /opt/vm-info-app.py
     permissions: '0755'
     content: |
-      ${indent(6, file("${path.module}/files/app.py"))}
+            ${app_py}
 
   - path: /etc/systemd/system/vm-info.service
     content: |
