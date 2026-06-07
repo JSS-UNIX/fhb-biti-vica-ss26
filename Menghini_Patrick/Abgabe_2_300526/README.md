@@ -1,5 +1,5 @@
 # Übersicht
-Eine GitHub Action deployt automatisch eine Ubuntu-VM auf Exoscale, die per HTTPS-Endpunkt technische Details über sich selbst bereitstellt. Die gesamte Infrastruktur wird mit Terraform über GitHub Actions Workflows aufgebaut und wieder abgerissen. Cloud-Init übernimmt die vollständige VM-Konfiguration — ein manueller Eingriff ist nicht nötig.
+Eine GitHub Action deployt automatisch eine Ubuntu-VM auf Exoscale, die per HTTPS-Endpunkt technische Details über sich selbst bereitstellt. Die gesamte Infrastruktur wird mit Terraform über GitHub Actions Workflows erstellt und wieder gelöscht. Cloud-Init übernimmt die vollständige VM-Konfiguration — ein manueller Eingriff ist nicht nötig.
 
 **Endpunkt:** `https://<VM-IP>` (self-signed Zertifikat)
 
