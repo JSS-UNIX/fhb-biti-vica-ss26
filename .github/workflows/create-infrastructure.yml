@@ -1,0 +1,79 @@
+# Workflow zum Erstellen bzw. Aktualisieren der Exoscale Infrastruktur.
+name: Create Exoscale Infrastructure
+
+on:
+  # Manueller Start in GitHub Actions.
+  workflow_dispatch:
+    inputs:
+      zone:
+        description: "Exoscale Zone"
+        required: true
+        default: "at-vie-1"
+      dns_domain:
+        description: "Optional: Exoscale DNS Zone, z.B. example.com"
+        required: false
+        default: ""
+      dns_record_name:
+        description: "Optional: DNS Record Name"
+        required: false
+        default: "vm-details"
+      letsencrypt_email:
+        description: "Optional: E-Mail für Let's Encrypt"
+        required: false
+        default: "admin@example.com"
+
+jobs:
+  apply:
+    name: OpenTofu Apply
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        # Alle tofu Befehle laufen im Abgabe-Unterordner.
+        working-directory: Abgabe_2_eda_konakci/terraform
+
+    env:
+      # Secrets werden als Terraform Variablen bereitgestellt.
+      TF_VAR_exoscale_api_key: ${{ secrets.EXOSCALE_API_KEY }}
+      TF_VAR_exoscale_api_secret: ${{ secrets.EXOSCALE_API_SECRET }}
+
+      # Workflow Inputs werden ebenfalls als Terraform Variablen übergeben.
+      TF_VAR_zone: ${{ inputs.zone }}
+      TF_VAR_dns_domain: ${{ inputs.dns_domain }}
+      TF_VAR_dns_record_name: ${{ inputs.dns_record_name }}
+      TF_VAR_letsencrypt_email: ${{ inputs.letsencrypt_email }}
+
+    steps:
+      # Repository auschecken, damit OpenTofu die Konfiguration lesen kann.
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # OpenTofu CLI installieren.
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_wrapper: false
+
+      # Provider herunterladen und Arbeitsverzeichnis initialisieren.
+      - name: OpenTofu init
+        run: tofu init
+
+      # Format prüfen, damit Codequalität im Workflow sichtbar ist.
+      - name: OpenTofu format check
+        run: tofu fmt -check -recursive
+
+      # Konfiguration validieren, bevor Ressourcen erstellt werden.
+      - name: OpenTofu validate
+        run: tofu validate
+
+      # Plan ausgeben, damit Änderungen im Workflow nachvollziehbar sind.
+      - name: OpenTofu plan
+        run: tofu plan -out=tfplan
+
+      # Infrastruktur erstellen bzw. aktualisieren.
+      - name: OpenTofu apply
+        run: tofu apply -auto-approve tfplan
+
+      # Wichtige URLs ausgeben, damit die Bewertung direkt testen kann.
+      - name: Show outputs
+        run: tofu output

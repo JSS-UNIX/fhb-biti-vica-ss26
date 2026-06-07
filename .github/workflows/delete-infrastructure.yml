@@ -1,0 +1,57 @@
+# Workflow zum Löschen der Exoscale Infrastruktur.
+name: Delete Exoscale Infrastructure
+
+on:
+  # Bewusst nur manuell, damit Infrastruktur nicht versehentlich entfernt wird.
+  workflow_dispatch:
+    inputs:
+      zone:
+        description: "Exoscale Zone"
+        required: true
+        default: "at-vie-1"
+      dns_domain:
+        description: "Optional: Exoscale DNS Zone, identisch zum Create Workflow"
+        required: false
+        default: ""
+      dns_record_name:
+        description: "Optional: DNS Record Name, identisch zum Create Workflow"
+        required: false
+        default: "vm-details"
+      letsencrypt_email:
+        description: "Optional: E-Mail für Let's Encrypt, identisch zum Create Workflow"
+        required: false
+        default: "admin@example.com"
+
+jobs:
+  destroy:
+    name: OpenTofu Destroy
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: Abgabe_2_eda_konakci/terraform
+
+    env:
+      # Gleiche Variablen wie beim Erstellen, damit OpenTofu denselben State und dieselben Ressourcen kennt.
+      TF_VAR_exoscale_api_key: ${{ secrets.EXOSCALE_API_KEY }}
+      TF_VAR_exoscale_api_secret: ${{ secrets.EXOSCALE_API_SECRET }}
+      TF_VAR_zone: ${{ inputs.zone }}
+      TF_VAR_dns_domain: ${{ inputs.dns_domain }}
+      TF_VAR_dns_record_name: ${{ inputs.dns_record_name }}
+      TF_VAR_letsencrypt_email: ${{ inputs.letsencrypt_email }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_wrapper: false
+
+      - name: OpenTofu init
+        run: tofu init
+
+      # Destroy entfernt VM, Security Group, optionale SSH Keys und optionalen DNS Record.
+      - name: OpenTofu destroy
+        run: tofu destroy -auto-approve
