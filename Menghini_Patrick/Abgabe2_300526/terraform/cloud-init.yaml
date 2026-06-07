@@ -135,8 +135,6 @@ write_files:
   # === Caddy Config: HTTPS Reverse Proxy ===
   - path: /etc/caddy/Caddyfile
     content: |
-      # Fuer IP-Adresse: self-signed Zertifikat (tls internal)
-      # Fuer Domain: einfach die IP durch die Domain ersetzen, Caddy holt automatisch Let's Encrypt
       :443 {
         tls internal
         reverse_proxy localhost:8080
@@ -169,11 +167,13 @@ write_files:
       * * * * * root /usr/local/bin/generate-sysinfo.sh > /dev/null 2>&1
 
 runcmd:
-  # Caddy installieren (offizielles Repository)
+  # Caddy Repository hinzufuegen
   - curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
   - curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list
   - apt-get update
-  - apt-get install -y caddy
+  # Caddy installieren - DEBIAN_FRONTEND verhindert interaktive Nachfragen
+  # --force-confold behaelt unsere Caddyfile statt die vom Paket
+  - DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::="--force-confold" caddy
   # Erste HTML-Seite generieren
   - /usr/local/bin/generate-sysinfo.sh
   # Python Webserver starten (intern auf Port 8080)
