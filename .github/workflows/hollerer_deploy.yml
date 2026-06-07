@@ -26,7 +26,7 @@ on:
   # push:
   #   branches: [main]
   #   paths:
-  #     - 'Abgabe_2_xxx/terraform/**'
+  #     - 'Abgabe_2_260607/terraform/**'
 
 jobs:
   terraform-apply:
@@ -43,7 +43,7 @@ jobs:
     # Arbeitsverzeichnis für alle run-Steps
     defaults:
       run:
-        working-directory: Abgabe_2_xxx/terraform
+        working-directory: Abgabe_2_260607/terraform
 
     steps:
       # 1. Repository auschecken
@@ -105,5 +105,5 @@ jobs:
         if: always() # Auch bei Fehler speichern
         with:
           name: terraform-state
-          path: Abgabe_2_xxx/terraform/terraform.tfstate
+          path: Abgabe_2_260607/terraform/terraform.tfstate
           retention-days: 30
