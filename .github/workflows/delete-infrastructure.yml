@@ -3,9 +3,10 @@ name: Delete Exoscale Infrastructure
 on:
   workflow_dispatch:
     inputs:
-      ssh_key:
-        description: "Name des vorhandenen Exoscale SSH Keys"
-        required: true
+      ssh_public_key:
+        description: "Optionaler SSH Public Key für Debugging-Zugriff"
+        required: false
+        default: ""
       zone:
         description: "Exoscale Zone"
         required: true
@@ -36,5 +37,5 @@ jobs:
           tofu destroy -auto-approve \
             -var="exoscale_api_key=${{ secrets.EXOSCALE_API_KEY }}" \
             -var="exoscale_api_secret=${{ secrets.EXOSCALE_API_SECRET }}" \
-            -var="ssh_key=${{ github.event.inputs.ssh_key }}" \
+            -var="ssh_public_key=${{ github.event.inputs.ssh_public_key }}"
             -var="zone=${{ github.event.inputs.zone }}"
