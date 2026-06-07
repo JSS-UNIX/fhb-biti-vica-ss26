@@ -26,11 +26,11 @@ jobs:
 
       - name: Terraform Init
         run: terraform init -reconfigure
-        working-directory: ./Menghini_Patrick/Abgabe2_300526/terraform
+        working-directory: ./Menghini_Patrick/Abgabe_2_300526/terraform
 
       - name: Terraform Destroy
         run: terraform destroy -auto-approve
-        working-directory: ./Menghini_Patrick/Abgabe2_300526/terraform
+        working-directory: ./Menghini_Patrick/Abgabe_2_300526/terraform
 
       - name: Remove State File from Repo
         run: |
