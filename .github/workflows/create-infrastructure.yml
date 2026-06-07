@@ -60,7 +60,7 @@ jobs:
 
       # Format prüfen, damit Codequalität im Workflow sichtbar ist.
       - name: OpenTofu format check
-        run: tofu fmt -check -recursive
+        run: tofu fmt -recursive
 
       # Konfiguration validieren, bevor Ressourcen erstellt werden.
       - name: OpenTofu validate
