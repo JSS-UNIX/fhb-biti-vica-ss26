@@ -1,6 +1,0 @@
-.terraform/
-.tofu/
-terraform.tfstate
-terraform.tfstate.backup
-*.tfvars
-*.tfplan
