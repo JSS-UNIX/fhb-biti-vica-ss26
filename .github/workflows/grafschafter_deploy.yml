@@ -12,7 +12,6 @@ on:
         required: false
         default: 'standard.small'
 
-# Verhindert gleichzeitige Deployments
 concurrency:
   group: terraform-deploy
   cancel-in-progress: false
@@ -22,34 +21,28 @@ jobs:
     name: Terraform Apply
     runs-on: ubuntu-latest
 
-    # Outputs damit spätere Steps die IP nutzen können
     outputs:
       vm_public_ip: ${{ steps.tf_output.outputs.vm_public_ip }}
 
     defaults:
       run:
-        working-directory: terraform/
+        working-directory: Grafschafter_Fabian/Abgabe_2_260606/terraform/
 
     steps:
-      # Repo auschecken
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # OpenTofu (Terraform-Fork) installieren
       - name: Setup OpenTofu
         uses: opentofu/setup-opentofu@v1
         with:
           tofu_version: "1.7.x"
 
-      # Provider-Plugins herunterladen und Backend initialisieren
       - name: Terraform Init
         run: tofu init
         env:
-          # API-Credentials aus GitHub Secrets
           EXOSCALE_API_KEY:    ${{ secrets.EXOSCALE_API_KEY }}
           EXOSCALE_API_SECRET: ${{ secrets.EXOSCALE_API_SECRET }}
 
-      # Ausführungsplan anzeigen (Dry-Run, keine Änderungen)
       - name: Terraform Plan
         run: |
           tofu plan \
@@ -59,14 +52,12 @@ jobs:
             -var="instance_type=${{ github.event.inputs.instance_type || 'standard.small' }}" \
             -out=tfplan
 
-      # Infrastruktur tatsächlich erstellen
       - name: Terraform Apply
         run: tofu apply -auto-approve tfplan
         env:
           EXOSCALE_API_KEY:    ${{ secrets.EXOSCALE_API_KEY }}
           EXOSCALE_API_SECRET: ${{ secrets.EXOSCALE_API_SECRET }}
 
-      # Outputs auslesen und als Job-Output weitergeben
       - name: Read Outputs
         id: tf_output
         run: |

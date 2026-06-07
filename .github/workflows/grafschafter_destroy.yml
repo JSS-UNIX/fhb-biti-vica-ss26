@@ -21,7 +21,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: terraform/
+        working-directory: Grafschafter_Fabian/Abgabe_2_260606/terraform/
 
     steps:
       - name: Checkout Repository
