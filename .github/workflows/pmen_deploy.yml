@@ -55,21 +55,21 @@ jobs:
           git commit -m "State-Update: VM erfolgreich erstellt [skip ci]" || echo "Keine Aenderungen am State"
           git push
 
-      - name: Endpunkt testen
-        working-directory: ./Menghini_Patrick/Abgabe2_300526/terraform
-        run: |
+       run: |
           URL=$(terraform output -raw vm_url)
           echo "Warte 120 Sekunden auf Cloud-Init..."
           sleep 120
-
           for i in $(seq 1 10); do
             echo "Versuch $i/10: Teste $URL ..."
-            if curl -s --max-time 10 "$URL" | grep -q "Technische Details"; then
+            if curl -sk --max-time 10 "$URL" | grep -q "Technische Details"; then
               echo "Endpunkt ist erreichbar!"
               exit 0
             fi
             echo "Noch nicht bereit, warte 20 Sekunden..."
             sleep 20
+          done
+          echo "WARNUNG: Endpunkt nach 10 Versuchen nicht erreichbar."
+          exit 0
           done
           echo "WARNUNG: Endpunkt nach 10 Versuchen nicht erreichbar."
           exit 0
