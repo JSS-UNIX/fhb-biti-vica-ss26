@@ -1,4 +1,4 @@
-# Definition des benötigten Terraform Providers für Exoscale
+# Definition des benötigten OpenTofu/Terraform Providers für Exoscale
 terraform {
   required_providers {
     exoscale = {
@@ -9,60 +9,59 @@ terraform {
 }
 
 # Verbindung zu Exoscale
-# Die Zugangsdaten kommen später automatisch aus GitHub Secrets
+# Die Zugangsdaten werden später im GitHub Workflow über GitHub Secrets gesetzt
 provider "exoscale" {
   key    = var.exoscale_key
   secret = var.exoscale_secret
 }
 
-
-# Security Group (Firewall) für die virtuelle Maschine
+# Security Group für die virtuelle Maschine
+# Die eigentlichen Firewall Regeln werden separat über exoscale_security_group_rule erstellt
 resource "exoscale_security_group" "web" {
-
   name = "ebin-vica-security-group"
-
-
-  # SSH Zugriff für Administration erlauben
-  ingress {
-    protocol  = "TCP"
-    ports     = ["22"]
-    cidr_list = ["0.0.0.0/0"]
-  }
-
-
-  # HTTP Zugriff für Webseite erlauben
-  ingress {
-    protocol  = "TCP"
-    ports     = ["80"]
-    cidr_list = ["0.0.0.0/0"]
-  }
 }
 
+# Firewall Regel für HTTP Zugriff auf Port 80
+resource "exoscale_security_group_rule" "http" {
+  security_group_id = exoscale_security_group.web.id
+  type              = "INGRESS"
+  protocol          = "TCP"
+  cidr              = "0.0.0.0/0"
+  start_port        = 80
+  end_port          = 80
+}
+
+# Firewall Regel für SSH Zugriff auf Port 22
+resource "exoscale_security_group_rule" "ssh" {
+  security_group_id = exoscale_security_group.web.id
+  type              = "INGRESS"
+  protocol          = "TCP"
+  cidr              = "0.0.0.0/0"
+  start_port        = 22
+  end_port          = 22
+}
 
 # Erstellung der Ubuntu VM in Exoscale
 resource "exoscale_compute_instance" "vm" {
-
   name = "ebin-vica-vm"
 
   # Standort Wien
   zone = "at-vie-1"
 
-  # Ubuntu Betriebssystem
+  # Unterstütztes Ubuntu Betriebssystem
   template = "Linux Ubuntu 24.04 LTS 64-bit"
 
-  # kleine VM ausreichend für Webserver
+  # Kleine VM reicht für Apache Webserver
   type = "standard.micro"
 
-  # Speichergröße
+  # Größe der Systemdisk
   disk_size = 10
 
-
-  # Firewall zuweisen
+  # Zuweisung der Security Group
   security_group_ids = [
     exoscale_security_group.web.id
   ]
 
-
-  # CloudInit führt die komplette Linux Konfiguration automatisch aus
+  # CloudInit führt die komplette Betriebssystemkonfiguration automatisch aus
   user_data = file("${path.module}/cloud-init.yaml")
 }
