@@ -8,6 +8,11 @@ on:
         required: false
         default: ""
 
+      zone:
+        description: "Exoscale Zone"
+        required: true
+        default: "at-vie-1"
+
 jobs:
   create:
     runs-on: ubuntu-latest
