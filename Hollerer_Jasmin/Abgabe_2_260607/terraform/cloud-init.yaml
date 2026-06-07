@@ -33,9 +33,9 @@ write_files:
           server_name _;
 
           # HTML-Endpunkt: liefert eine fertig gerenderte Website
-          location / {
-              alias /var/www/sysinfo/;
-              index index.html;
+          location /api {
+              root /var/www/sysinfo;
+              try_files /api.json =404;
               # Kein Caching – Seite soll immer aktuell sein
               add_header Cache-Control "no-cache, no-store, must-revalidate";
           }
