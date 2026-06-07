@@ -42,7 +42,7 @@ locals {
   fqdn = local.dns_enabled ? "${var.dns_record_name}.${var.dns_domain}" : ""
 
   # cloud-init Template mit eingesetzten Werten rendern
-  cloud_init_rendered = templatefile("${path.module}/cloud_init.yaml", {
+  cloud_init_rendered = templatefile("${path.module}/cloud_init.yaml.tftpl", {
     domain_name = local.fqdn
   })
 }
