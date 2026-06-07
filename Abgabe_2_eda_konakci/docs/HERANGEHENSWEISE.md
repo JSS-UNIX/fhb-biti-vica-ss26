@@ -2,74 +2,116 @@
 
 ## Ziel
 
-Ziel war es, eine vollständig automatisierte Lösung zu bauen, die eine VM in Exoscale erstellt und über eine URL technische Details dieser VM ausliefert. Die Lösung soll ohne manuelle Konfiguration auf der VM funktionieren und sowohl eine HTML Website als auch einen JSON API Endpoint bereitstellen.
+Ziel der Aufgabe ist es, automatisiert eine VM in Exoscale zu erstellen.
+Diese VM ist über eine öffentliche URL erreichbar und zeigt technische Informationen über sich selbst an.
 
-## Umsetzung
+Es gibt zwei Endpunkte:
 
-Die Infrastruktur wird deklarativ mit OpenTofu beschrieben. OpenTofu verwendet den Exoscale Provider und erstellt folgende Ressourcen:
+- HTML Website: http://<PUBLIC_IP>/
+- JSON API: http://<PUBLIC_IP>/api/v1/vm-details.json
 
-1. Eine Security Group für Webzugriff.
-2. Ingress-Regeln für HTTP Port 80 und HTTPS Port 443.
-3. Optional eine SSH-Regel, wenn explizit ein CIDR gesetzt wird.
-4. Eine Ubuntu Compute Instance.
-5. Optional einen DNS A-Record in Exoscale DNS.
+## Verwendete Technologien
+   
+   - OpenTofu/Terraform für die Infrastruktur
+   - GitHub Actions für Erstellung und Löschung
+   - Exoscale als Cloud Provider
+   - Ubuntu als Betriebssystem
+   - Cloud-Init für die automatische VM-Konfiguration
+   - Nginx als Webserver
 
-Die VM verwendet ein offizielles Ubuntu 22.04 LTS Template. Das Template wird über eine Data Source geladen, damit die passende Template-ID in der gewählten Exoscale Zone verwendet wird.
+## Aufbau
 
-## Automatisierung mit GitHub Actions
+Die Abgabe liegt im Ordner:
 
-Es gibt zwei Workflows:
+Abgabe_2_eda_konakci
 
-- `create-infrastructure.yml` führt `tofu init`, `tofu fmt -check`, `tofu validate`, `tofu plan` und `tofu apply` aus.
-- `delete-infrastructure.yml` führt `tofu destroy` aus.
+Wichtige Bestandteile:
 
-Die Exoscale Zugangsdaten werden aus GitHub Secrets gelesen. Dadurch stehen keine Zugangsdaten im Repository.
+    - terraform/ enthält den OpenTofu-Code
+    - cloud-init.yaml.tftpl konfiguriert die VM automatisch
+    - create-infrastructure.yml erstellt die Infrastruktur
+    - delete-infrastructure.yml löscht die Infrastruktur
+    - README.md beschreibt die Verwendung
 
-## Betriebssystemkonfiguration mit Cloud-Init
 
-Die komplette Betriebssystemkonfiguration passiert über `cloud-init.yaml.tftpl`. Cloud-Init führt beim ersten Start der VM folgende Schritte aus:
+## Funktionsweise
 
-1. Paketlisten aktualisieren.
-2. Nginx, jq, lshw und Certbot installieren.
-3. Einen Nginx Virtual Host anlegen.
-4. Ein Script unter `/usr/local/bin/render-vm-details.sh` schreiben.
-5. Einen systemd Service und Timer einrichten.
-6. HTML und JSON direkt beim ersten Start erzeugen.
-7. Optional Certbot für HTTPS starten, wenn ein FQDN gesetzt wurde.
+OpenTofu erstellt in Exoscale eine Ubuntu VM, eine Security Group und die nötigen Firewall-Regeln für HTTP und HTTPS.
 
-Der systemd Timer aktualisiert die Daten alle 60 Sekunden. Dadurch bleiben dynamische Werte wie Uptime, Memory und Filesystem-Nutzung aktuell.
+Die VM erhält beim Erstellen eine Cloud-Init Konfiguration. Dadurch werden automatisch Nginx und alle benötigten Hilfsprogramme installiert. Außerdem werden eine HTML-Seite und eine JSON-Datei erzeugt.
 
-## Website und API
+Die angezeigten Informationen werden direkt auf der VM ermittelt.
 
-Die Website ist unter `/` erreichbar. Sie zeigt die wichtigsten VM Details in Cards und Tabellen an.
+## Angezeigte Informationen
 
-Die JSON API ist unter `/api/v1/vm-details.json` erreichbar. Sie enthält dieselben Informationen in strukturierter Form und eignet sich für automatische Tests.
+Die Website und die JSON API zeigen unter anderem:
 
-Beispiele für enthaltene Informationen:
+   - Hostname
+   - öffentliche IP-Adresse
+   - private IP-Adresse
+   - Betriebssystem
+   - Kernel-Version
+   - CPU-Informationen
+   - Arbeitsspeicher
+   - Hypervisor bzw. Virtualisierung
+   - Filesysteme
+   - Uptime
+   - Zeitpunkt der letzten Aktualisierung
 
-- `network.public_ipv4`
-- `operating_system.kernel`
-- `compute.hypervisor`
-- `compute.memory_total`
-- `storage`
-- `filesystems`
+## Verwendung
 
-## DNS und HTTPS
+Vor der Ausführung müssen in GitHub folgende Secrets gesetzt werden:
 
-DNS und HTTPS sind optional umgesetzt.
+EXOSCALE_API_KEY
+EXOSCALE_API_SECRET
 
-Wenn `dns_domain` leer bleibt, wird keine DNS-Ressource erstellt und die VM ist über ihre öffentliche IP per HTTP erreichbar.
+Diese Werte stammen aus Exoscale und werden nicht im Code gespeichert.
 
-Wenn `dns_domain` gesetzt wird, sucht OpenTofu die vorhandene Exoscale DNS Zone und erstellt einen A-Record auf die öffentliche IP der VM. Danach versucht Cloud-Init mit Certbot ein Let's Encrypt Zertifikat zu erstellen und Nginx auf HTTPS mit Redirect umzustellen.
+## Infrastruktur erstellen
 
-Dieser Ansatz wurde gewählt, weil Let's Encrypt ein öffentlich auflösbares FQDN benötigt und keine Zertifikate für reine IP-Adressen ausstellt.
+   1. GitHub Repository öffnen
+   2. Tab Actions öffnen
+   3. Workflow Create Exoscale Infrastructure auswählen
+   4. Auf Run workflow klicken
+   5. Zone auswählen, z.B. at-vie-1
+   6. Workflow starten
 
-## Verwendung bei der Beurteilung
+Nach erfolgreichem Lauf werden die Public IP und die URLs als Output angezeigt.
 
-Für die Beurteilung kann der Create Workflow manuell gestartet werden. Nach Abschluss stehen die relevanten URLs in den Workflow Outputs:
+## Infrastruktur löschen
 
-- `http_url`
-- `https_url`
-- `json_api_url`
+   1. Tab Actions öffnen
+   2. Workflow Delete Exoscale Infrastructure auswählen
+   3. Auf Run workflow klicken
+   4. Gleiche Zone wie beim Erstellen verwenden
+   5. Workflow starten
 
-Die Prüfer können zuerst die Website öffnen und anschließend die JSON API testen. Nach der Prüfung kann der Delete Workflow gestartet werden, um alle Ressourcen wieder zu entfernen.
+Dadurch wird die erstellte Infrastruktur wieder gelöscht.
+
+## Hinweis zu DNS und HTTPS
+
+Die Lösung ist für den Aufruf über die öffentliche IP-Adresse vorbereitet.
+DNS und HTTPS sind optional vorgesehen, benötigen aber einen gültigen FQDN.
+
+## Teststatus / Hinweis
+
+Die Infrastruktur konnte über den GitHub Actions Workflow erstellt werden.  
+OpenTofu hat eine Public IP und die vorgesehenen Endpunkte als Output ausgegeben.
+
+Beim manuellen Test war der HTTP-Endpunkt über die Public IP in meinem Testlauf jedoch nicht erreichbar.  
+Die wahrscheinlichsten Ursachen sind eine noch nicht vollständig abgeschlossene Cloud-Init Konfiguration oder ein Problem beim Start des Webservers auf der VM.
+
+Die Lösung enthält die vorgesehenen Komponenten für die automatische Bereitstellung:
+
+   - OpenTofu Infrastruktur
+   - GitHub Actions Workflows
+   - Ubuntu VM
+   - Security Group für HTTP und HTTPS
+   - Cloud-Init Konfiguration
+   - HTML Website
+   - JSON API
+
+## Zusammenfassung
+
+Die Lösung erstellt und löscht eine Exoscale VM automatisiert über GitHub Actions und OpenTofu.
+Die VM wird vollständig über Cloud-Init konfiguriert und stellt technische Informationen als HTML Website und JSON API bereit.
