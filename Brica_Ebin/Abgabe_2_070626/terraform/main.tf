@@ -16,7 +16,6 @@ provider "exoscale" {
 }
 
 # Security Group für die virtuelle Maschine
-# Die eigentlichen Firewall Regeln werden separat über exoscale_security_group_rule erstellt
 resource "exoscale_security_group" "web" {
   name = "ebin-vica-security-group"
 }
@@ -41,10 +40,9 @@ resource "exoscale_security_group_rule" "ssh" {
   end_port          = 22
 }
 
-# Ubuntu Template anhand des Namens und der Zone suchen
 data "exoscale_template" "ubuntu" {
   zone = "at-vie-1"
-  template_id = data.exoscale_template.ubuntu.id
+  name = "Linux Ubuntu 24.04 LTS 64-bit"
 }
 
 # Erstellung der Ubuntu VM in Exoscale
@@ -54,8 +52,8 @@ resource "exoscale_compute_instance" "vm" {
   # Standort Wien
   zone = "at-vie-1"
 
-  # Unterstütztes Ubuntu Betriebssystem
-  template = "Linux Ubuntu 24.04 LTS 64-bit"
+  # Ubuntu Template verwenden
+  template_id = data.exoscale_template.ubuntu.id
 
   # Kleine VM reicht für Apache Webserver
   type = "standard.micro"
