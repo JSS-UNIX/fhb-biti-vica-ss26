@@ -43,7 +43,7 @@ jobs:
     # Arbeitsverzeichnis für alle run-Steps
     defaults:
       run:
-        working-directory: Abgabe_2_260607/terraform
+        working-directory: Hollerer_Jasmin/Abgabe_2_260607/terraform
 
     steps:
       # 1. Repository auschecken
@@ -105,5 +105,5 @@ jobs:
         if: always() # Auch bei Fehler speichern
         with:
           name: terraform-state
-          path: Abgabe_2_260607/terraform/terraform.tfstate
+          path: Hollerer_Jasmin/Abgabe_2_260607/terraform/terraform.tfstate
           retention-days: 30
