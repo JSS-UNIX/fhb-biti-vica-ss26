@@ -44,6 +44,7 @@ locals {
   # cloud-init Template mit eingesetzten Werten rendern
   cloud_init_rendered = templatefile("${path.module}/cloud-init.yaml.tftpl", {
     fqdn = local.fqdn
+	letsencrypt_email = var.letsencrypt_email
   })
 }
 
