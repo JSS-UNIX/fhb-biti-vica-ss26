@@ -1,4 +1,4 @@
-name: "pmen753 - 2. Exoscale Infrastruktur Loeschen"
+name: "pmen753 - delete"
 on:
   workflow_dispatch:
 
