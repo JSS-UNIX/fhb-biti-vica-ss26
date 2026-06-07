@@ -6,8 +6,8 @@
 
 | Endpunkt | Inhalt |
 |----------|--------|
-| `http://<IP>/`   | **HTML-Website** mit Systeminformationen (visuell aufbereitet) |
-| `http://<IP>/api` | **JSON-API** mit denselben Daten als maschinenlesbare Rohdaten |
+| `http://185.150.11.9/`   | **HTML-Website** mit Systeminformationen (visuell aufbereitet) |
+| `http://185.150.11.9/api` | **JSON-API** mit denselben Daten als maschinenlesbare Rohdaten |
 
 Beide Endpunkte werden alle 30 Sekunden automatisch aktualisiert.
 
@@ -48,7 +48,7 @@ Im GitHub Repository unter **Settings → Secrets and variables → Actions** fo
 | `EXOSCALE_API_SECRET` | Exoscale API Secret (nur beim Erstellen sichtbar!) |
 | `SSH_PUBLIC_KEY` | Inhalt der `~/.ssh/id_rsa.pub` (oder ed25519) Datei |
 
-### 2. SSH-Schlüssel erstellen (falls noch nicht vorhanden)
+### 2. SSH-Schlüssel erstellen
 
 ```bash
 ssh-keygen -t ed25519 -C "vica-deploy"
@@ -58,8 +58,8 @@ cat ~/.ssh/id_ed25519.pub   # diesen Wert als SSH_PUBLIC_KEY Secret speichern
 ### 3. Exoscale API Key erstellen
 
 1. [portal.exoscale.com](https://portal.exoscale.com) → **IAM** → **API Keys** → **ADD**
-2. Name: `vica-terraform`
-3. Role: `unrestricted` (für Terraform nötig)
+2. Name: `JH-VICA-terraform`
+3. Role: `Owner` (für Terraform nötig)
 4. Key und Secret sofort kopieren und als GitHub Secrets speichern
 
 ---
@@ -74,8 +74,6 @@ cat ~/.ssh/id_ed25519.pub   # diesen Wert als SSH_PUBLIC_KEY Secret speichern
 4. **Run workflow** bestätigen
 
 Der Workflow läuft ca. 2–3 Minuten. Im **Job Summary** erscheint danach die URL.
-
-> **Hinweis:** Nach dem Deployment benötigt CloudInit noch ca. 2–3 Minuten, um alle Pakete zu installieren und nginx zu starten. Danach sind die Endpunkte erreichbar.
 
 ### Infrastruktur löschen
 
@@ -99,8 +97,6 @@ Der Workflow läuft ca. 2–3 Minuten. Im **Job Summary** erscheint danach die U
 
 ### CloudInit (`terraform/cloud-init.yaml`)
 
-CloudInit ist ein Industriestandard für die automatische Konfiguration von VMs beim ersten Start. Es führt folgende Schritte aus:
-
 1. **Pakete installieren:** nginx, jq, sysstat, lshw, net-tools, bc
 2. **nginx konfigurieren:** Zwei Locations (`/` für HTML, `/api` für JSON)
 3. **Skript `generate-sysinfo.sh` anlegen:** Sammelt Systemdaten aus `/proc`, `df`, `ip`, `hostname`, Exoscale Metadata-API
@@ -121,20 +117,16 @@ CloudInit ist ein Industriestandard für die automatische Konfiguration von VMs 
 
 ## Terraform State
 
->  **Wichtig für Produktion:** Der Terraform State wird in diesem Setup als GitHub Actions Artifact gespeichert. Dies ist für eine Lehrveranstaltung ausreichend, aber in einer Produktionsumgebung sollte ein Remote Backend verwendet werden (z.B. Exoscale Object Storage via S3-Protokoll).
-
 Der State verbindet Terraform mit den tatsächlich erstellten Ressourcen. Ohne ihn weiß Terraform nicht, was es erstellt hat und kann nichts löschen.
-
----
 
 ## Projektstruktur
 
 ```
-Abgabe_2_xxx/
+Abgabe_2_260607/
 ├── .github/
 │   └── workflows/
-│       ├── deploy.yml      # Workflow: Infrastruktur erstellen
-│       └── destroy.yml     # Workflow: Infrastruktur löschen
+│       ├── hollerer_deploy.yml      # Workflow: Infrastruktur erstellen
+│       └── hollerer_destroy.yml     # Workflow: Infrastruktur löschen
 ├── terraform/
 │   ├── main.tf             # Exoscale Ressourcen
 │   ├── variables.tf        # Eingabevariablen
