@@ -33,6 +33,14 @@ resource "exoscale_security_group_rule" "http" {
   end_port          = 80
   cidr              = "0.0.0.0/0"
 }
+resource "exoscale_security_group_rule" "app" {
+  security_group_id = exoscale_security_group.web.id
+  type              = "INGRESS"
+  protocol          = "TCP"
+  start_port        = 8080
+  end_port          = 8080
+  cidr              = "0.0.0.0/0"
+}
 
 resource "exoscale_security_group_rule" "https" {
   security_group_id = exoscale_security_group.web.id
