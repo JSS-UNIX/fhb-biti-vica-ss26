@@ -6,25 +6,17 @@ on:
 jobs:
   destroy:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Install Exoscale CLI
+        run: |
+          curl -sL https://github.com/exoscale/cli/releases/latest/download/exo_linux_amd64.tar.gz | tar -xz
+          sudo mv exo /usr/local/bin/exo
 
-      - name: Setup OpenTofu
-        uses: opentofu/setup-opentofu@v1
-        with:
-          tofu_version: "1.8.0"
-
-      - name: Init
-        working-directory: Edison_Blakaj/Abgabe_2_260517/terraform
+      - name: Delete VM and Security Group
         env:
           EXOSCALE_API_KEY:    ${{ secrets.EXOSCALE_API_KEY }}
           EXOSCALE_API_SECRET: ${{ secrets.EXOSCALE_API_SECRET }}
-        run: tofu init
-
-      - name: Destroy
-        working-directory: Edison_Blakaj/Abgabe_2_260517/terraform
-        env:
-          EXOSCALE_API_KEY:    ${{ secrets.EXOSCALE_API_KEY }}
-          EXOSCALE_API_SECRET: ${{ secrets.EXOSCALE_API_SECRET }}
-        run: tofu destroy -auto-approve
+        run: |
+          exo compute instance delete blakaj-vminfo --zone at-vie-1 --force
+          exo compute security-group delete blakaj-vminfo-sg --force
