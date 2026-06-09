@@ -110,7 +110,7 @@ Die Aufgabe wurde in drei Ausführungsebenen unterteilt:
 
 Das fertige Dashboard sah folgendermaßen aus:
 
-![Exoscale-Dashboard](/images/NGINX.png)
+![Exoscale-Dashboard](NGINX.png)
 
 ---
 
