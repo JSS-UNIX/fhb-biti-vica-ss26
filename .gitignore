@@ -5,3 +5,5 @@
 *.tfstate.backup
 .vs/
 .idea/
+.devenv/
+.direnv/
